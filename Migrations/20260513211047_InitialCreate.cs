@@ -81,7 +81,7 @@ namespace ClyvoVetApi.Migrations
                     Nome = table.Column<string>(type: "NVARCHAR2(2000)", nullable: false),
                     DataAplicacao = table.Column<DateTime>(type: "TIMESTAMP(7)", nullable: false),
                     ProximaDose = table.Column<DateTime>(type: "TIMESTAMP(7)", nullable: true),
-                    Aplicada = table.Column<bool>(type: "BOOLEAN", nullable: false),
+                    Aplicada = table.Column<bool>(type: "NUMBER(1)", nullable: false),
                     PetId = table.Column<int>(type: "NUMBER(10)", nullable: false)
                 },
                 constraints: table =>

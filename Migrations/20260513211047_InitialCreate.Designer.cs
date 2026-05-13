@@ -12,7 +12,7 @@ using Oracle.EntityFrameworkCore.Metadata;
 namespace ClyvoVetApi.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260508020551_InitialCreate")]
+    [Migration("20260513211047_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -124,7 +124,7 @@ namespace ClyvoVetApi.Migrations
                     OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<bool>("Aplicada")
-                        .HasColumnType("BOOLEAN");
+                        .HasColumnType("NUMBER(1)");
 
                     b.Property<DateTime>("DataAplicacao")
                         .HasColumnType("TIMESTAMP(7)");
