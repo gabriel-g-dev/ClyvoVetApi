@@ -16,14 +16,18 @@ public class ConsultasController : ControllerBase
         _context = context;
     }
 
-    // GET: api/consultas
+    /// <summary>
+    /// Lista todas as consultas
+    /// </summary>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Consulta>>> GetConsultas()
     {
         return Ok(await _context.Consultas.Include(c => c.Pet).ToListAsync());
     }
 
-    // GET: api/consultas/5
+    /// <summary>
+    /// Busca uma consulta pelo seu ID
+    /// </summary>
     [HttpGet("{id}")]
     public async Task<ActionResult<Consulta>> GetConsulta(int id)
     {
@@ -35,7 +39,9 @@ public class ConsultasController : ControllerBase
         return Ok(consulta);
     }
 
-    // GET: api/consultas/veterinario/{nome}
+    /// <summary>
+    /// Busca consultas por veterinário
+    /// </summary>
     [HttpGet("veterinario/{nome}")]
     public async Task<ActionResult> GetConsultasByVeterinario(string nome)
     {
@@ -46,7 +52,9 @@ public class ConsultasController : ControllerBase
         return Ok(consultas);
     }
 
-    // GET: api/consultas/periodo?inicio=2024-01-01&fim=2024-12-31
+    /// <summary>
+    /// Busca consultas por período
+    /// </summary>
     [HttpGet("periodo")]
     public async Task<ActionResult> GetConsultasByPeriodo(
         [FromQuery] DateTime inicio,
@@ -58,7 +66,9 @@ public class ConsultasController : ControllerBase
         return Ok(consultas);
     }
 
-    // POST: api/consultas
+    /// <summary>
+    /// Cadastra uma nova consulta
+    /// </summary>
     [HttpPost]
     public async Task<ActionResult<Consulta>> PostConsulta(Consulta consulta)
     {
@@ -71,7 +81,9 @@ public class ConsultasController : ControllerBase
         return CreatedAtAction(nameof(GetConsulta), new { id = consulta.Id }, consulta);
     }
 
-    // PUT: api/consultas/5
+    /// <summary>
+    /// Atualiza as informações de uma consulta
+    /// </summary>
     [HttpPut("{id}")]
     public async Task<IActionResult> PutConsulta(int id, Consulta consulta)
     {
@@ -94,7 +106,9 @@ public class ConsultasController : ControllerBase
         return NoContent();
     }
 
-    // DELETE: api/consultas/5
+    /// <summary>
+    /// Remove uma consulta pelo seu ID
+    /// </summary>
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteConsulta(int id)
     {

@@ -16,14 +16,18 @@ public class TutoresController : ControllerBase
         _context = context;
     }
 
-    // GET: api/tutores
+    /// <summary>
+    /// Lista todos os tutores
+    /// </summary>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Tutor>>> GetTutores()
     {
         return Ok(await _context.Tutores.Include(t => t.Pets).ToListAsync());
     }
 
-    // GET: api/tutores/5
+    /// <summary>
+    /// Busca um tutor pelo seu ID
+    /// </summary>
     [HttpGet("{id}")]
     public async Task<ActionResult<Tutor>> GetTutor(int id)
     {
@@ -35,7 +39,9 @@ public class TutoresController : ControllerBase
         return Ok(tutor);
     }
 
-    // GET: api/tutores/email/{email}
+    /// <summary>
+    /// Busca um tutor pelo seu e-mail
+    /// </summary>
     [HttpGet("email/{email}")]
     public async Task<ActionResult<Tutor>> GetTutorByEmail(string email)
     {
@@ -47,7 +53,9 @@ public class TutoresController : ControllerBase
         return Ok(tutor);
     }
 
-    // GET: api/tutores/{id}/pets
+    /// <summary>
+    /// Lista os pets de um tutor específico
+    /// </summary>
     [HttpGet("{id}/pets")]
     public async Task<ActionResult> GetPetsDoTutor(int id)
     {
@@ -59,7 +67,9 @@ public class TutoresController : ControllerBase
         return Ok(tutor.Pets);
     }
 
-    // POST: api/tutores
+    /// <summary>
+    /// Cadastra um novo tutor
+    /// </summary>
     [HttpPost]
     public async Task<ActionResult<Tutor>> PostTutor(Tutor tutor)
     {
@@ -72,7 +82,9 @@ public class TutoresController : ControllerBase
         return CreatedAtAction(nameof(GetTutor), new { id = tutor.Id }, tutor);
     }
 
-    // PUT: api/tutores/5
+    /// <summary>
+    /// Atualiza as informações de um tutor
+    /// </summary>
     [HttpPut("{id}")]
     public async Task<IActionResult> PutTutor(int id, Tutor tutor)
     {
@@ -95,7 +107,9 @@ public class TutoresController : ControllerBase
         return NoContent();
     }
 
-    // DELETE: api/tutores/5
+    /// <summary>
+    /// Remove um tutor pelo seu ID
+    /// </summary>
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteTutor(int id)
     {

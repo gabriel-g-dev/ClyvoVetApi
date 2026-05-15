@@ -16,14 +16,18 @@ public class VacinasController : ControllerBase
         _context = context;
     }
 
-    // GET: api/vacinas
+    /// <summary>
+    /// Lista todas as vacinas
+    /// </summary>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Vacina>>> GetVacinas()
     {
         return Ok(await _context.Vacinas.Include(v => v.Pet).ToListAsync());
     }
 
-    // GET: api/vacinas/5
+    /// <summary>
+    /// Busca uma vacina pelo seu ID
+    /// </summary>
     [HttpGet("{id}")]
     public async Task<ActionResult<Vacina>> GetVacina(int id)
     {
@@ -35,7 +39,9 @@ public class VacinasController : ControllerBase
         return Ok(vacina);
     }
 
-    // GET: api/vacinas/pendentes
+    /// <summary>
+    /// Lista vacinas pendentes
+    /// </summary>
     [HttpGet("pendentes")]
     public async Task<ActionResult> GetVacinasPendentes()
     {
@@ -45,7 +51,9 @@ public class VacinasController : ControllerBase
         return Ok(vacinas);
     }
 
-    // GET: api/vacinas/nome/{nome}
+    /// <summary>
+    /// Busca vacinas pelo nome
+    /// </summary>
     [HttpGet("nome/{nome}")]
     public async Task<ActionResult> GetVacinasByNome(string nome)
     {
@@ -56,7 +64,9 @@ public class VacinasController : ControllerBase
         return Ok(vacinas);
     }
 
-    // GET: api/vacinas/proximas?dias=30
+    /// <summary>
+    /// Lista as próximas vacinas dentro de um número de dias
+    /// </summary>
     [HttpGet("proximas")]
     public async Task<ActionResult> GetProximasVacinas([FromQuery] int dias = 30)
     {
@@ -67,7 +77,9 @@ public class VacinasController : ControllerBase
         return Ok(vacinas);
     }
 
-    // POST: api/vacinas
+    /// <summary>
+    /// Cadastra uma nova vacina
+    /// </summary>
     [HttpPost]
     public async Task<ActionResult<Vacina>> PostVacina(Vacina vacina)
     {
@@ -80,7 +92,9 @@ public class VacinasController : ControllerBase
         return CreatedAtAction(nameof(GetVacina), new { id = vacina.Id }, vacina);
     }
 
-    // PUT: api/vacinas/5
+    /// <summary>
+    /// Atualiza as informações de uma vacina
+    /// </summary>
     [HttpPut("{id}")]
     public async Task<IActionResult> PutVacina(int id, Vacina vacina)
     {
@@ -103,7 +117,9 @@ public class VacinasController : ControllerBase
         return NoContent();
     }
 
-    // DELETE: api/vacinas/5
+    /// <summary>
+    /// Remove uma vacina pelo seu ID
+    /// </summary>
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteVacina(int id)
     {

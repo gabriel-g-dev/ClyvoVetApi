@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ClyvoVetApi.Data;
+using System.Reflection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +13,10 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1",
         Description = "API para gestão da jornada contínua de saúde do pet - FIAP Challenge 2026"
     });
+
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    c.IncludeXmlComments(xmlPath);
 });
 
 builder.Services.AddDbContext<AppDbContext>(options =>

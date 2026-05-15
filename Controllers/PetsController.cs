@@ -16,14 +16,18 @@ public class PetsController : ControllerBase
         _context = context;
     }
 
-    // GET: api/pets
+    /// <summary>
+    /// Lista todos os pets
+    /// </summary>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Pet>>> GetPets()
     {
         return Ok(await _context.Pets.Include(p => p.Tutor).ToListAsync());
     }
 
-    // GET: api/pets/5
+    /// <summary>
+    /// Busca um pet pelo seu ID
+    /// </summary>
     [HttpGet("{id}")]
     public async Task<ActionResult<Pet>> GetPet(int id)
     {
@@ -37,7 +41,9 @@ public class PetsController : ControllerBase
         return Ok(pet);
     }
 
-    // GET: api/pets/especie/{especie}
+    /// <summary>
+    /// Busca pets por espécie
+    /// </summary>
     [HttpGet("especie/{especie}")]
     public async Task<ActionResult> GetPetsByEspecie(string especie)
     {
@@ -47,7 +53,9 @@ public class PetsController : ControllerBase
         return Ok(pets);
     }
 
-    // GET: api/pets/raca/{raca}
+    /// <summary>
+    /// Busca pets por raça
+    /// </summary>
     [HttpGet("raca/{raca}")]
     public async Task<ActionResult> GetPetsByRaca(string raca)
     {
@@ -57,7 +65,9 @@ public class PetsController : ControllerBase
         return Ok(pets);
     }
 
-    // GET: api/pets/{id}/vacinas
+    /// <summary>
+    /// Lista as vacinas de um pet
+    /// </summary>
     [HttpGet("{id}/vacinas")]
     public async Task<ActionResult> GetVacinasDoPet(int id)
     {
@@ -69,7 +79,9 @@ public class PetsController : ControllerBase
         return Ok(pet.Vacinas);
     }
 
-    // GET: api/pets/{id}/consultas
+    /// <summary>
+    /// Lista as consultas de um pet
+    /// </summary>
     [HttpGet("{id}/consultas")]
     public async Task<ActionResult> GetConsultasDoPet(int id)
     {
@@ -81,7 +93,9 @@ public class PetsController : ControllerBase
         return Ok(pet.Consultas);
     }
 
-    // POST: api/pets
+    /// <summary>
+    /// Cadastra um novo pet
+    /// </summary>
     [HttpPost]
     public async Task<ActionResult<Pet>> PostPet(Pet pet)
     {
@@ -94,7 +108,9 @@ public class PetsController : ControllerBase
         return CreatedAtAction(nameof(GetPet), new { id = pet.Id }, pet);
     }
 
-    // PUT: api/pets/5
+    /// <summary>
+    /// Atualiza as informações de um pet
+    /// </summary>
     [HttpPut("{id}")]
     public async Task<IActionResult> PutPet(int id, Pet pet)
     {
@@ -117,7 +133,9 @@ public class PetsController : ControllerBase
         return NoContent();
     }
 
-    // DELETE: api/pets/5
+    /// <summary>
+    /// Remove um pet pelo seu ID
+    /// </summary>
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeletePet(int id)
     {
