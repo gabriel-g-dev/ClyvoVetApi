@@ -1,125 +1,116 @@
+using ClyvoVetApi.DTOs.Request;
+using ClyvoVetApi.DTOs.Response;
+using ClyvoVetApi.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ClyvoVetApi.Data;
-using ClyvoVetApi.Models;
 
 namespace ClyvoVetApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class TutoresController : ControllerBase
+[Produces("application/json")]
+public class TutoresController(ITutorService service) : ControllerBase
 {
-    private readonly AppDbContext _context;
-
-    public TutoresController(AppDbContext context)
-    {
-        _context = context;
-    }
+    private readonly ITutorService _service = service;
 
     /// <summary>
-    /// Lista todos os tutores
+    /// Lista todos os tutores com paginação
     /// </summary>
+    /// <param name="page">Número da página (inicia em 1)</param>
+    /// <param name="pageSize">Tamanho da página (padrão 10)</param>
+    /// <returns>Retorna uma lista paginada de tutores</returns>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Tutor>>> GetTutores()
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponseDto<TutorResponseDto>))]
+    public async Task<IActionResult> GetTutores(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
-        return Ok(await _context.Tutores.Include(t => t.Pets).ToListAsync());
+        var result = await _service.GetAllAsync(page, pageSize);
+        return Ok(result);
     }
 
     /// <summary>
     /// Busca um tutor pelo seu ID
     /// </summary>
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Tutor>> GetTutor(int id)
+    /// <param name="id">ID único do tutor</param>
+    /// <returns>Retorna os detalhes completos do tutor e a lista de seus pets</returns>
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TutorDetailsResponseDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> GetTutor(int id)
     {
-        var tutor = await _context.Tutores.Include(t => t.Pets)
-                                          .FirstOrDefaultAsync(t => t.Id == id);
-        if (tutor == null)
-            return NotFound(new { mensagem = "Tutor não encontrado." });
-
-        return Ok(tutor);
+        var result = await _service.GetByIdAsync(id);
+        return Ok(result);
     }
 
     /// <summary>
     /// Busca um tutor pelo seu e-mail
     /// </summary>
+    /// <param name="email">E-mail cadastrado do tutor</param>
+    /// <returns>Retorna os detalhes completos do tutor encontrado</returns>
     [HttpGet("email/{email}")]
-    public async Task<ActionResult<Tutor>> GetTutorByEmail(string email)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TutorDetailsResponseDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> GetTutorByEmail(string email)
     {
-        var tutor = await _context.Tutores.Include(t => t.Pets)
-                                          .FirstOrDefaultAsync(t => t.Email == email);
-        if (tutor == null)
-            return NotFound(new { mensagem = "Tutor não encontrado com esse email." });
-
-        return Ok(tutor);
+        var result = await _service.GetByEmailAsync(email);
+        return Ok(result);
     }
 
     /// <summary>
     /// Lista os pets de um tutor específico
     /// </summary>
-    [HttpGet("{id}/pets")]
-    public async Task<ActionResult> GetPetsDoTutor(int id)
+    /// <param name="id">ID do tutor</param>
+    /// <returns>Retorna a lista de pets vinculados ao tutor</returns>
+    [HttpGet("{id:int}/pets")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<PetDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> GetPetsDoTutor(int id)
     {
-        var tutor = await _context.Tutores.Include(t => t.Pets)
-                                          .FirstOrDefaultAsync(t => t.Id == id);
-        if (tutor == null)
-            return NotFound(new { mensagem = "Tutor não encontrado." });
-
-        return Ok(tutor.Pets);
+        var result = await _service.GetPetsByTutorIdAsync(id);
+        return Ok(result);
     }
 
     /// <summary>
     /// Cadastra um novo tutor
     /// </summary>
+    /// <param name="dto">Dados para cadastro do tutor</param>
+    /// <returns>Retorna o tutor recém-criado</returns>
     [HttpPost]
-    public async Task<ActionResult<Tutor>> PostTutor(Tutor tutor)
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(TutorDetailsResponseDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> PostTutor([FromBody] TutorRequestDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        _context.Tutores.Add(tutor);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetTutor), new { id = tutor.Id }, tutor);
+        var result = await _service.CreateAsync(dto);
+        return CreatedAtAction(nameof(GetTutor), new { id = result.Id }, result);
     }
 
     /// <summary>
-    /// Atualiza as informações de um tutor
+    /// Atualiza as informações de um tutor existente
     /// </summary>
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutTutor(int id, Tutor tutor)
+    /// <param name="id">ID do tutor a ser atualizado</param>
+    /// <param name="dto">Novos dados do tutor</param>
+    /// <returns>Retorna o tutor com os dados atualizados</returns>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(TutorDetailsResponseDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> PutTutor(int id, [FromBody] TutorRequestDto dto)
     {
-        if (id != tutor.Id)
-            return BadRequest(new { mensagem = "ID da URL diferente do corpo da requisição." });
-
-        _context.Entry(tutor).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!_context.Tutores.Any(t => t.Id == id))
-                return NotFound(new { mensagem = "Tutor não encontrado." });
-            throw;
-        }
-
-        return NoContent();
+        var result = await _service.UpdateAsync(id, dto);
+        return Ok(result);
     }
 
     /// <summary>
     /// Remove um tutor pelo seu ID
     /// </summary>
-    [HttpDelete("{id}")]
+    /// <param name="id">ID do tutor a ser excluído</param>
+    /// <returns>Retorna status 204 NoContent indicando sucesso</returns>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> DeleteTutor(int id)
     {
-        var tutor = await _context.Tutores.FindAsync(id);
-        if (tutor == null)
-            return NotFound(new { mensagem = "Tutor não encontrado." });
-
-        _context.Tutores.Remove(tutor);
-        await _context.SaveChangesAsync();
-
+        await _service.DeleteAsync(id);
         return NoContent();
     }
 }
