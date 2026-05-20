@@ -1,124 +1,118 @@
+using ClyvoVetApi.DTOs.Request;
+using ClyvoVetApi.DTOs.Response;
+using ClyvoVetApi.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ClyvoVetApi.Data;
-using ClyvoVetApi.Models;
 
 namespace ClyvoVetApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ConsultasController : ControllerBase
+[Produces("application/json")]
+public class ConsultasController(IConsultaService service) : ControllerBase
 {
-    private readonly AppDbContext _context;
-
-    public ConsultasController(AppDbContext context)
-    {
-        _context = context;
-    }
+    private readonly IConsultaService _service = service;
 
     /// <summary>
-    /// Lista todas as consultas
+    /// Lista todas as consultas com paginação
     /// </summary>
+    /// <param name="page">Número da página (inicia em 1)</param>
+    /// <param name="pageSize">Tamanho da página (padrão 10)</param>
+    /// <returns>Retorna uma lista paginada de consultas</returns>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Consulta>>> GetConsultas()
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponseDto<ConsultaResponseDto>))]
+    public async Task<IActionResult> GetConsultas(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
-        return Ok(await _context.Consultas.Include(c => c.Pet).ToListAsync());
+        var result = await _service.GetAllAsync(page, pageSize);
+        return Ok(result);
     }
 
     /// <summary>
     /// Busca uma consulta pelo seu ID
     /// </summary>
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Consulta>> GetConsulta(int id)
+    /// <param name="id">ID da consulta</param>
+    /// <returns>Retorna os detalhes da consulta</returns>
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ConsultaResponseDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> GetConsulta(int id)
     {
-        var consulta = await _context.Consultas.Include(c => c.Pet)
-                                               .FirstOrDefaultAsync(c => c.Id == id);
-        if (consulta == null)
-            return NotFound(new { mensagem = "Consulta não encontrada." });
-
-        return Ok(consulta);
+        var result = await _service.GetByIdAsync(id);
+        return Ok(result);
     }
 
     /// <summary>
     /// Busca consultas por veterinário
     /// </summary>
+    /// <param name="nome">Nome ou parte do nome do veterinário</param>
+    /// <returns>Lista de consultas realizadas pelo veterinário</returns>
     [HttpGet("veterinario/{nome}")]
-    public async Task<ActionResult> GetConsultasByVeterinario(string nome)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ConsultaResponseDto>))]
+    public async Task<IActionResult> GetConsultasByVeterinario(string nome)
     {
-        var consultas = await _context.Consultas.Include(c => c.Pet)
-                                                .Where(c => c.Veterinario.ToLower()
-                                                .Contains(nome.ToLower()))
-                                                .ToListAsync();
-        return Ok(consultas);
+        var result = await _service.GetByVeterinarioAsync(nome);
+        return Ok(result);
     }
 
     /// <summary>
-    /// Busca consultas por período
+    /// Busca consultas por período de datas
     /// </summary>
+    /// <param name="inicio">Data de início do período (ISO format)</param>
+    /// <param name="fim">Data de fim do período (ISO format)</param>
+    /// <returns>Lista de consultas dentro do período</returns>
     [HttpGet("periodo")]
-    public async Task<ActionResult> GetConsultasByPeriodo(
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ConsultaResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> GetConsultasByPeriodo(
         [FromQuery] DateTime inicio,
         [FromQuery] DateTime fim)
     {
-        var consultas = await _context.Consultas.Include(c => c.Pet)
-                                                .Where(c => c.Data >= inicio && c.Data <= fim)
-                                                .ToListAsync();
-        return Ok(consultas);
+        var result = await _service.GetByPeriodoAsync(inicio, fim);
+        return Ok(result);
     }
 
     /// <summary>
     /// Cadastra uma nova consulta
     /// </summary>
+    /// <param name="dto">Dados da nova consulta</param>
+    /// <returns>Retorna a consulta criada</returns>
     [HttpPost]
-    public async Task<ActionResult<Consulta>> PostConsulta(Consulta consulta)
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ConsultaResponseDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> PostConsulta([FromBody] ConsultaRequestDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        _context.Consultas.Add(consulta);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetConsulta), new { id = consulta.Id }, consulta);
+        var result = await _service.CreateAsync(dto);
+        return CreatedAtAction(nameof(GetConsulta), new { id = result.Id }, result);
     }
 
     /// <summary>
-    /// Atualiza as informações de uma consulta
+    /// Atualiza as informações de uma consulta existente
     /// </summary>
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutConsulta(int id, Consulta consulta)
+    /// <param name="id">ID da consulta</param>
+    /// <param name="dto">Novos dados da consulta</param>
+    /// <returns>Retorna a consulta atualizada</returns>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ConsultaResponseDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> PutConsulta(int id, [FromBody] ConsultaRequestDto dto)
     {
-        if (id != consulta.Id)
-            return BadRequest(new { mensagem = "ID da URL diferente do corpo da requisição." });
-
-        _context.Entry(consulta).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!_context.Consultas.Any(c => c.Id == id))
-                return NotFound(new { mensagem = "Consulta não encontrada." });
-            throw;
-        }
-
-        return NoContent();
+        var result = await _service.UpdateAsync(id, dto);
+        return Ok(result);
     }
 
     /// <summary>
     /// Remove uma consulta pelo seu ID
     /// </summary>
-    [HttpDelete("{id}")]
+    /// <param name="id">ID da consulta</param>
+    /// <returns>Retorna 204 NoContent</returns>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> DeleteConsulta(int id)
     {
-        var consulta = await _context.Consultas.FindAsync(id);
-        if (consulta == null)
-            return NotFound(new { mensagem = "Consulta não encontrada." });
-
-        _context.Consultas.Remove(consulta);
-        await _context.SaveChangesAsync();
-
+        await _service.DeleteAsync(id);
         return NoContent();
     }
 }

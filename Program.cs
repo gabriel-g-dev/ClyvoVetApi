@@ -31,9 +31,15 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Registro de Repositórios
 builder.Services.AddScoped<ITutorRepository, TutorRepository>();
+builder.Services.AddScoped<IPetRepository, PetRepository>();
+builder.Services.AddScoped<IConsultaRepository, ConsultaRepository>();
+builder.Services.AddScoped<IVacinaRepository, VacinaRepository>();
 
 // Registro de Serviços
 builder.Services.AddScoped<ITutorService, TutorService>();
+builder.Services.AddScoped<IPetService, PetService>();
+builder.Services.AddScoped<IConsultaService, ConsultaService>();
+builder.Services.AddScoped<IVacinaService, VacinaService>();
 
 // Tratamento Global de Exceções (RFC 7807)
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

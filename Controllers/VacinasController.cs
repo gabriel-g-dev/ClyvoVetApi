@@ -1,135 +1,127 @@
+using ClyvoVetApi.DTOs.Request;
+using ClyvoVetApi.DTOs.Response;
+using ClyvoVetApi.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ClyvoVetApi.Data;
-using ClyvoVetApi.Models;
 
 namespace ClyvoVetApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class VacinasController : ControllerBase
+[Produces("application/json")]
+public class VacinasController(IVacinaService service) : ControllerBase
 {
-    private readonly AppDbContext _context;
-
-    public VacinasController(AppDbContext context)
-    {
-        _context = context;
-    }
+    private readonly IVacinaService _service = service;
 
     /// <summary>
-    /// Lista todas as vacinas
+    /// Lista todas as vacinas com paginação
     /// </summary>
+    /// <param name="page">Número da página (inicia em 1)</param>
+    /// <param name="pageSize">Tamanho da página (padrão 10)</param>
+    /// <returns>Retorna uma lista paginada de vacinas</returns>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Vacina>>> GetVacinas()
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponseDto<VacinaResponseDto>))]
+    public async Task<IActionResult> GetVacinas(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
-        return Ok(await _context.Vacinas.Include(v => v.Pet).ToListAsync());
+        var result = await _service.GetAllAsync(page, pageSize);
+        return Ok(result);
     }
 
     /// <summary>
     /// Busca uma vacina pelo seu ID
     /// </summary>
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Vacina>> GetVacina(int id)
+    /// <param name="id">ID da vacina</param>
+    /// <returns>Retorna os detalhes da vacina</returns>
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(VacinaResponseDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> GetVacina(int id)
     {
-        var vacina = await _context.Vacinas.Include(v => v.Pet)
-                                           .FirstOrDefaultAsync(v => v.Id == id);
-        if (vacina == null)
-            return NotFound(new { mensagem = "Vacina não encontrada." });
-
-        return Ok(vacina);
+        var result = await _service.GetByIdAsync(id);
+        return Ok(result);
     }
 
     /// <summary>
-    /// Lista vacinas pendentes
+    /// Lista vacinas pendentes (não aplicadas)
     /// </summary>
+    /// <returns>Lista de vacinas que ainda não foram aplicadas</returns>
     [HttpGet("pendentes")]
-    public async Task<ActionResult> GetVacinasPendentes()
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<VacinaResponseDto>))]
+    public async Task<IActionResult> GetVacinasPendentes()
     {
-        var vacinas = await _context.Vacinas.Include(v => v.Pet)
-                                            .Where(v => !v.Aplicada)
-                                            .ToListAsync();
-        return Ok(vacinas);
+        var result = await _service.GetPendentesAsync();
+        return Ok(result);
     }
 
     /// <summary>
-    /// Busca vacinas pelo nome
+    /// Busca vacinas pelo nome (marca/tipo)
     /// </summary>
+    /// <param name="nome">Nome da vacina (Ex: Anti-rábica, V10)</param>
+    /// <returns>Lista de vacinas correspondentes ao nome informado</returns>
     [HttpGet("nome/{nome}")]
-    public async Task<ActionResult> GetVacinasByNome(string nome)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<VacinaResponseDto>))]
+    public async Task<IActionResult> GetVacinasByNome(string nome)
     {
-        var vacinas = await _context.Vacinas.Include(v => v.Pet)
-                                            .Where(v => v.Nome.ToLower()
-                                            .Contains(nome.ToLower()))
-                                            .ToListAsync();
-        return Ok(vacinas);
+        var result = await _service.GetByNomeAsync(nome);
+        return Ok(result);
     }
 
     /// <summary>
-    /// Lista as próximas vacinas dentro de um número de dias
+    /// Lista as próximas vacinas programadas para os próximos dias
     /// </summary>
+    /// <param name="dias">Quantidade de dias para frente no calendário (padrão 30)</param>
+    /// <returns>Lista de vacinas pendentes que devem ser aplicadas no período informado</returns>
     [HttpGet("proximas")]
-    public async Task<ActionResult> GetProximasVacinas([FromQuery] int dias = 30)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<VacinaResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> GetProximasVacinas([FromQuery] int dias = 30)
     {
-        var limite = DateTime.Now.AddDays(dias);
-        var vacinas = await _context.Vacinas.Include(v => v.Pet)
-                                            .Where(v => v.ProximaDose <= limite && !v.Aplicada)
-                                            .ToListAsync();
-        return Ok(vacinas);
+        var result = await _service.GetProximasAsync(dias);
+        return Ok(result);
     }
 
     /// <summary>
     /// Cadastra uma nova vacina
     /// </summary>
+    /// <param name="dto">Dados da nova vacina</param>
+    /// <returns>Retorna a vacina criada</returns>
     [HttpPost]
-    public async Task<ActionResult<Vacina>> PostVacina(Vacina vacina)
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(VacinaResponseDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> PostVacina([FromBody] VacinaRequestDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        _context.Vacinas.Add(vacina);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetVacina), new { id = vacina.Id }, vacina);
+        var result = await _service.CreateAsync(dto);
+        return CreatedAtAction(nameof(GetVacina), new { id = result.Id }, result);
     }
 
     /// <summary>
-    /// Atualiza as informações de uma vacina
+    /// Atualiza as informações de uma vacina existente
     /// </summary>
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutVacina(int id, Vacina vacina)
+    /// <param name="id">ID da vacina</param>
+    /// <param name="dto">Novos dados da vacina</param>
+    /// <returns>Retorna a vacina atualizada</returns>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(VacinaResponseDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> PutVacina(int id, [FromBody] VacinaRequestDto dto)
     {
-        if (id != vacina.Id)
-            return BadRequest(new { mensagem = "ID da URL diferente do corpo da requisição." });
-
-        _context.Entry(vacina).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!_context.Vacinas.Any(v => v.Id == id))
-                return NotFound(new { mensagem = "Vacina não encontrada." });
-            throw;
-        }
-
-        return NoContent();
+        var result = await _service.UpdateAsync(id, dto);
+        return Ok(result);
     }
 
     /// <summary>
     /// Remove uma vacina pelo seu ID
     /// </summary>
-    [HttpDelete("{id}")]
+    /// <param name="id">ID da vacina a ser removida</param>
+    /// <returns>Retorna 204 NoContent</returns>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> DeleteVacina(int id)
     {
-        var vacina = await _context.Vacinas.FindAsync(id);
-        if (vacina == null)
-            return NotFound(new { mensagem = "Vacina não encontrada." });
-
-        _context.Vacinas.Remove(vacina);
-        await _context.SaveChangesAsync();
-
+        await _service.DeleteAsync(id);
         return NoContent();
     }
 }

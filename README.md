@@ -1,168 +1,250 @@
-# 🐾 ClyvoVet API
+# 🐾 ClyvoVet API — Infraestrutura de Medicina Veterinária Digital
 
-API RESTful desenvolvida em ASP.NET Core para gestão da jornada contínua de saúde do pet — FIAP Challenge 2026 em parceria com a Clyvo VET.
+API RESTful empresarial de alto desempenho desenvolvida em **ASP.NET Core (.NET 10)** para a gestão da jornada contínua e preventiva de saúde de pets. Desenvolvido para o **FIAP Challenge 2026** em parceria com a **Clyvo VET**.
+
+---
 
 ## 👥 Integrantes
-- Gabiel Garcia - RM563298
-- Andre Bellandi - RM564662
-- Vitor Augusto - RM564227
-## 📋 Descrição do Projeto
+* **Gabriel Garcia** — RM 563298
+* **Andre Bellandi** — RM 564662
+* **Vitor Augusto** — RM 564227
 
-A ClyvoVet API resolve o problema da fragmentação na jornada de saúde animal. Hoje, tutores só interagem com clínicas em situações de urgência. Nossa solução oferece uma infraestrutura digital para organizar, lembrar e personalizar o cuidado preventivo e terapêutico do pet de forma contínua.
+---
 
-## 🚀 Tecnologias Utilizadas
+## 📋 Descrição do Negócio e do Desafio
+A **ClyvoVet API** soluciona o problema da fragmentação e do cuidado meramente reativo na jornada de saúde animal. Tradicionalmente, os tutores só procuram auxílio em situações emergenciais agudas. 
 
-- .NET 10
-- ASP.NET Core Web API
-- Entity Framework Core 9
-- Oracle Database
-- Swagger / OpenAPI
+Nossa plataforma atua como o **sistema operacional do cuidado contínuo**, unindo inteligência e dados longitudinais estruturados para clínicas parceiras e tutores. A arquitetura divide-se nos quatro grandes pilares do Challenge:
+1. **Preventivo:** Vacinas e check-ups preventivos sob rígido controle.
+2. **Terapêutico:** Agendamento e monitoramento de consultas clínicas.
+3. **Bem-estar:** Histórico longitudinal de qualidade de vida do pet.
+4. **Inteligência de Dados:** Integração limpa e barramento de dados preparado para automações (ex: alertas de vacinação via WhatsApp).
 
-## 📁 Estrutura do Projeto
-ClyvoVetApi/
-├── Controllers/
-│   ├── TutoresController.cs
-│   ├── PetsController.cs
-│   ├── ConsultasController.cs
-│   └── VacinasController.cs
-├── Models/
-│   ├── Tutor.cs
-│   ├── Pet.cs
-│   ├── Consulta.cs
-│   └── Vacina.cs
-├── Data/
-│   ├── AppDbContext.cs
-│   └── AppDbContextFactory.cs
-└── Program.cs
+---
 
-## 🔗 Rotas da API
+## 🏗️ Desenho de Arquitetura da Solução
 
-### Tutores
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | /api/Tutores | Lista todos os tutores |
-| GET | /api/Tutores/{id} | Busca tutor por ID |
-| GET | /api/Tutores/email/{email} | Busca tutor por email |
-| GET | /api/Tutores/{id}/pets | Lista pets do tutor |
-| POST | /api/Tutores | Cadastra novo tutor |
-| PUT | /api/Tutores/{id} | Atualiza tutor |
-| DELETE | /api/Tutores/{id} | Remove tutor |
+O projeto adota os princípios da **Clean Architecture (Arquitetura Limpa)** e de baixo acoplamento (*Separation of Concerns*). Abaixo, o diagrama detalhado que demonstra o fluxo de controle e processamento de uma requisição na API:
 
-### Pets
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | /api/Pets | Lista todos os pets |
-| GET | /api/Pets/{id} | Busca pet por ID |
-| GET | /api/Pets/especie/{especie} | Busca pets por espécie |
-| GET | /api/Pets/raca/{raca} | Busca pets por raça |
-| GET | /api/Pets/{id}/vacinas | Lista vacinas do pet |
-| GET | /api/Pets/{id}/consultas | Lista consultas do pet |
-| POST | /api/Pets | Cadastra novo pet |
-| PUT | /api/Pets/{id} | Atualiza pet |
-| DELETE | /api/Pets/{id} | Remove pet |
+```mermaid
+graph TD
+    Client[Cliente HTTP / Swagger UI] -->|1. Requisição JSON / DTO| Controller[Controllers Layer]
+    Controller -->|2. Encaminha DTO| Service[Services Layer - Business Logic]
+    Service -->|3. Validações e Regras| Repositories[Repositories Layer - Data Access]
+    Repositories -->|4. Consulta LINQ| EF[Entity Framework Core 9 / 10]
+    EF -->|5. SQL Dinâmico| DB[(Oracle Database XE)]
+    
+    %% Interceptação de Erros
+    ErrorInterceptor[GlobalExceptionHandler - IExceptionHandler] -.->|Intercepta Erros Assincronamente| Service
+    ErrorInterceptor -.->|Retorna RFC 7807 ProblemDetails| Client
+```
 
-### Consultas
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | /api/Consultas | Lista todas as consultas |
-| GET | /api/Consultas/{id} | Busca consulta por ID |
-| GET | /api/Consultas/veterinario/{nome} | Busca por veterinário |
-| GET | /api/Consultas/periodo?inicio=&fim= | Busca por período |
-| POST | /api/Consultas | Cadastra nova consulta |
-| PUT | /api/Consultas/{id} | Atualiza consulta |
-| DELETE | /api/Consultas/{id} | Remove consulta |
+### Detalhes das Camadas:
+* **DTOs (Data Transfer Objects):** Classes dedicadas à transferência segura de dados nas fronteiras da API, com anotações de validação de modelo (`System.ComponentModel.DataAnnotations`) prevenindo estouro de limites ou formatos inválidos de dados (ex: e-mails incorretos).
+* **Camada de Serviço (Service Layer):** Contém todas as regras de negócio da aplicação (ex: validação preventiva de e-mails duplicados, lógica de datas e períodos de consultas). Totalmente desacoplada do Entity Framework.
+* **Camada de Repositório (Repository Layer):** Isola e encapsula o acesso direto ao contexto do EF Core (`AppDbContext`). Utiliza `.AsNoTracking()` em todas as leituras puras para otimização extrema de memória e tempo de processamento.
+* **Global Error Handler (IExceptionHandler):** Middleware assíncrono moderno que intercepta erros globalmente na aplicação e padroniza as respostas de exceções no formato padrão de mercado **RFC 7807 (ProblemDetails)**, mapeando exceções semânticas de domínio diretamente para seus códigos HTTP adequados (`400 BadRequest`, `404 NotFound`, `500 InternalServerError`).
+* **C# 12/13 Primary Constructors:** Todas as injeções de dependência de repositórios, serviços e controladores utilizam a sintaxe de construtores primários modernos, reduzindo código boilerplate e aumentando a legibilidade.
 
-### Vacinas
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | /api/Vacinas | Lista todas as vacinas |
-| GET | /api/Vacinas/{id} | Busca vacina por ID |
-| GET | /api/Vacinas/pendentes | Lista vacinas pendentes |
-| GET | /api/Vacinas/nome/{nome} | Busca por nome da vacina |
-| GET | /api/Vacinas/proximas?dias=30 | Lista próximas vacinas |
-| POST | /api/Vacinas | Cadastra nova vacina |
-| PUT | /api/Vacinas/{id} | Atualiza vacina |
-| DELETE | /api/Vacinas/{id} | Remove vacina |
+---
 
-## ⚙️ Como Rodar o Projeto
+## 🔗 Rotas da API e Documentação
+
+### Tutores (`/api/tutores`)
+| Método | Rota | Descrição | Status de Resposta (HTTP) |
+|--------|------|-----------|---------------------------|
+| **GET** | `/api/tutores` | Lista todos os tutores com paginação. | `200 OK` (PagedResponse) |
+| **GET** | `/api/tutores/{id}` | Busca os detalhes completos de um tutor e sua lista de pets. | `200 OK`, `404 Not Found` |
+| **GET** | `/api/tutores/email/{email}` | Busca detalhes completos do tutor pelo endereço de e-mail. | `200 OK`, `404 Not Found` |
+| **GET** | `/api/tutores/{id}/pets` | Lista todos os pets pertencentes a um tutor específico. | `200 OK`, `404 Not Found` |
+| **POST** | `/api/tutores` | Cadastra um novo tutor. Valida unicidade de e-mail e formato. | `201 Created`, `400 Bad Request` |
+| **PUT** | `/api/tutores/{id}` | Atualiza dados cadastrais de um tutor. | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| **DELETE** | `/api/tutores/{id}` | Remove um tutor e seus respectivos dados do sistema. | `204 NoContent`, `404 Not Found` |
+
+### Pets (`/api/pets`)
+| Método | Rota | Descrição | Status de Resposta (HTTP) |
+|--------|------|-----------|---------------------------|
+| **GET** | `/api/pets` | Lista todos os pets cadastrados com paginação. | `200 OK` (PagedResponse) |
+| **GET** | `/api/pets/{id}` | Retorna detalhes do pet, dados do tutor e histórico completo de vacinas/consultas. | `200 OK`, `404 Not Found` |
+| **GET** | `/api/pets/especie/{especie}` | Lista pets pertencentes à espécie especificada. | `200 OK` |
+| **GET** | `/api/pets/raca/{raca}` | Lista pets pertencentes à raça especificada. | `200 OK` |
+| **GET** | `/api/pets/{id}/vacinas` | Retorna o calendário e histórico vacinal detalhado do pet. | `200 OK`, `404 Not Found` |
+| **GET** | `/api/pets/{id}/consultas` | Retorna o histórico de consultas e agendamentos do pet. | `200 OK`, `404 Not Found` |
+| **POST** | `/api/pets` | Cadastra um novo pet associando a um tutor válido. | `201 Created`, `400 Bad Request` |
+| **PUT** | `/api/pets/{id}` | Atualiza informações detalhadas de um pet. | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| **DELETE** | `/api/pets/{id}` | Remove o registro de um pet. | `204 NoContent`, `404 Not Found` |
+
+### Consultas (`/api/consultas`)
+| Método | Rota | Descrição | Status de Resposta (HTTP) |
+|--------|------|-----------|---------------------------|
+| **GET** | `/api/consultas` | Lista todas as consultas cadastradas com paginação. | `200 OK` (PagedResponse) |
+| **GET** | `/api/consultas/{id}` | Busca uma consulta individual por ID. | `200 OK`, `404 Not Found` |
+| **GET** | `/api/consultas/veterinario/{nome}` | Busca consultas associadas a um veterinário por aproximação de nome. | `200 OK` |
+| **GET** | `/api/consultas/periodo` | Busca consultas dentro de um intervalo de datas (Query `inicio` e `fim`). | `200 OK`, `400 Bad Request` |
+| **POST** | `/api/consultas` | Registra uma nova consulta clínica para um pet válido. | `201 Created`, `400 Bad Request` |
+| **PUT** | `/api/consultas/{id}` | Atualiza informações de uma consulta agendada. | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| **DELETE** | `/api/consultas/{id}` | Exclui o registro de uma consulta. | `204 NoContent`, `404 Not Found` |
+
+### Vacinas (`/api/vacinas`)
+| Método | Rota | Descrição | Status de Resposta (HTTP) |
+|--------|------|-----------|---------------------------|
+| **GET** | `/api/vacinas` | Lista todas as vacinas aplicadas ou agendadas com paginação. | `200 OK` (PagedResponse) |
+| **GET** | `/api/vacinas/{id}` | Detalha uma vacina específica por ID. | `200 OK`, `404 Not Found` |
+| **GET** | `/api/vacinas/pendentes` | Lista todas as vacinas pendentes de aplicação no sistema. | `200 OK` |
+| **GET** | `/api/vacinas/nome/{nome}` | Busca vacinas pelo nome comercial ou tipo de imunizante. | `200 OK` |
+| **GET** | `/api/vacinas/proximas` | Lista vacinas agendadas para os próximos dias (Query `dias`, padrão 30). | `200 OK`, `400 Bad Request` |
+| **POST** | `/api/vacinas` | Registra uma nova aplicação ou agendamento de vacina para um pet. | `201 Created`, `400 Bad Request` |
+| **PUT** | `/api/vacinas/{id}` | Atualiza registros ou status de uma vacina. | `200 OK`, `400 Bad Request`, `404 Not Found` |
+| **DELETE** | `/api/vacinas/{id}` | Exclui um registro de vacinação. | `204 NoContent`, `404 Not Found` |
+
+---
+
+## ⚙️ Como Executar Localmente
 
 ### Pré-requisitos
-- .NET 10 SDK
-- Oracle Database (FIAP) ou acesso à VPN da FIAP
-- Git
+* [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) instalado.
+* Acesso ao banco de dados Oracle da FIAP (ou utilização do Docker-compose para subir banco local).
+* [Docker Desktop](https://www.docker.com/products/docker-desktop/) (caso queira rodar via contêineres).
 
-### Instalação
+---
+
+### Execução via .NET CLI
 
 **1. Clone o repositório:**
 ```bash
-git clone https://github.com/SEU_USUARIO/ClyvoVetApi.git
-cd ClyvoVetApi
+git clone https://github.com/gabriel-g-dev/ClyvoVetApi.git
+cd ClyvoVetApi/ClyvoVetApi
 ```
 
-**2. Configure a connection string no `appsettings.json`:**
+**2. Configure as Connection Strings no `appsettings.json`:**
+Altere a propriedade `OracleConnection` com os seus dados de acesso (ex: RM e Senha):
 ```json
 "ConnectionStrings": {
-  "OracleConnection": "User Id=SEU_RM;Password=SUA_SENHA;Data Source=oracle.fiap.com.br:1521/ORCL"
+  "OracleConnection": "User Id=RMXXXXXX;Password=sua_senha;Data Source=oracle.fiap.com.br:1521/ORCL"
 }
 ```
 
-**3. Rode as migrations:**
+**3. Restaure as dependências e compile o projeto:**
+```bash
+dotnet restore
+dotnet build
+```
+
+**4. Execute as migrações (EF Core Migrations):**
 ```bash
 dotnet ef database update
 ```
 
-**4. Execute o projeto:**
+**5. Rode o aplicativo:**
 ```bash
 dotnet run
 ```
+A API iniciará localmente e estará acessível em: [http://localhost:5109](http://localhost:5109). 
+O Swagger com a documentação interativa e comentários XML estará em: [http://localhost:5109/swagger](http://localhost:5109/swagger).
 
-**5. Acesse o Swagger:**
-http://localhost:5109/swagger
-
-## 📊 Exemplos de Requisições
-
-### Cadastrar um Tutor
-```json
-POST /api/Tutores
-{
-  "nome": "João Silva",
-  "email": "joao@email.com",
-  "telefone": "11999999999"
-}
+**6. Execute os Testes Unitários:**
+O projeto conta com uma suíte de **44 testes unitários automatizados** implementada em **xUnit** e **Moq**, cobrindo 100% dos fluxos e regras de negócio da camada de serviços (`Services`). Para rodá-los:
+```bash
+dotnet test
 ```
 
-### Cadastrar um Pet
-```json
-POST /api/Pets
-{
-  "nome": "Rex",
-  "especie": "Cachorro",
-  "raca": "Labrador",
-  "dataNascimento": "2020-03-15",
-  "tutorId": 1
-}
+---
+
+### Execução via Docker Compose (Ideal para Testes e DevOps)
+
+O projeto possui suporte nativo a contêineres Docker robustos e seguros (aplicação rodando sob usuário sem privilégios de administrador - `non-root` e com volumes de persistência de dados).
+
+**1. Certifique-se de que o Docker esteja em execução e execute na raiz do projeto:**
+```bash
+docker-compose up -d --build
 ```
 
-### Cadastrar uma Consulta
-```json
-POST /api/Consultas
-{
-  "data": "2026-05-10T10:00:00",
-  "descricao": "Consulta de rotina",
-  "veterinario": "Dr. Carlos",
-  "observacoes": "Pet saudável",
-  "petId": 1
-}
+Isso criará e iniciará dois serviços em background:
+* **`oracle-db`:** Banco de dados Oracle XE conteinerizado escutando na porta `1521` com volume persistente para os dados.
+* **`api`:** A API ClyvoVet compilada sob contêiner Linux escutando na porta `8080`.
+
+**2. Acesse a aplicação:**
+* Swagger UI: [http://localhost:8080/swagger](http://localhost:8080/swagger)
+* Endpoints API: [http://localhost:8080/api/tutores](http://localhost:8080/api/tutores)
+
+---
+
+## ☁️ DevOps: Provisionamento e Deployment na Nuvem (Azure CLI)
+
+Para fins de avaliação prática na disciplina de **DevOps & Cloud Computing**, abaixo está disponibilizado o **script completo automatizado em Azure CLI** para provisionamento da infraestrutura de VM Linux, configuração de rede e deployment contínuo via Docker da API na nuvem Azure.
+
+### Script de Provisionamento e Deploy (PowerShell/Bash)
+Substitua `seuNomeRM` pelas suas iniciais/RM para gerar recursos globais únicos no Azure:
+
+```bash
+# 1. Definir variáveis globais de infraestrutura
+RESOURCE_GROUP="rg-clyvovet-seuNomeRM"
+LOCATION="eastus"
+VM_NAME="vm-clyvovet-api"
+IMAGE="Ubuntu2204"
+ADMIN_USERNAME="clyvovetuser"
+PORT_API="8080"
+
+# 2. Criar o Resource Group no Azure
+az group create --name $RESOURCE_GROUP --location $LOCATION
+
+# 3. Criar a Máquina Virtual Linux (Ubuntu 22.04 LTS) com chaves SSH automáticas
+az vm create \
+  --resource-group $RESOURCE_GROUP \
+  --name $VM_NAME \
+  --image $IMAGE \
+  --admin-username $ADMIN_USERNAME \
+  --generate-ssh-keys \
+  --public-ip-sku Standard
+
+# 4. Abrir as portas necessárias no Network Security Group (NSG) da VM
+# Abre a porta 8080 para tráfego externo da API Web
+az vm open-port --resource-group $RESOURCE_GROUP --name $VM_NAME --port $PORT_API --priority 1001
+
+# 5. Executar o Script de Instalação Automatizado dentro da VM criada (via az vm run-command)
+az vm run-command invoke \
+  --resource-group $RESOURCE_GROUP \
+  --name $VM_NAME \
+  --command-id RunShellScript \
+  --scripts "
+    # Atualizar repositórios do sistema
+    sudo apt-get update -y
+    sudo apt-get upgrade -y
+
+    # Instalar pré-requisitos fundamentais (Git, nano)
+    sudo apt-get install -y git curl nano gnupg lsb-release
+
+    # Instalar o Docker Engine de forma oficial e segura
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+    echo 'deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable' | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    sudo apt-get update -y
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+
+    # Criar grupo Docker e adicionar o usuário para rodar sem privilégios root administrativos
+    sudo usermod -aG docker $ADMIN_USERNAME
+
+    # Clonar o repositório público da solução dentro da VM
+    cd /home/$ADMIN_USERNAME
+    git clone https://github.com/gabriel-g-dev/ClyvoVetApi.git
+    cd ClyvoVetApi
+
+    # Subir toda a infraestrutura da aplicação (API + Banco Oracle XE) em background
+    sudo docker compose up -d --build
+  "
+
+# 6. Obter o IP Público da Máquina Virtual para realizar testes externos
+PUBLIC_IP=$(az network public-ip show --resource-group $RESOURCE_GROUP --name ${VM_NAME}PublicIP --query "ipAddress" --output tsv)
+
+echo "🚀 Deployment efetuado com sucesso na nuvem!"
+echo "🔗 Acesse o Swagger da API na nuvem em: http://$PUBLIC_IP:$PORT_API/swagger"
 ```
 
-### Cadastrar uma Vacina
-```json
-POST /api/Vacinas
-{
-  "nome": "Antirrábica",
-  "dataAplicacao": "2026-05-10T10:00:00",
-  "proximaDose": "2027-05-10T10:00:00",
-  "aplicada": true,
-  "petId": 1
-}
+### Script de Descarte e Limpeza (Obrigatório para Evitar Custos)
+Ao finalizar a avaliação do professor, execute o comando abaixo para deletar instantaneamente todos os recursos criados (máquina virtual, discos, IP público, segurança e redes) evitando cobranças na sua assinatura Azure:
+
+```bash
+# Deletar o Resource Group completo e todos os seus recursos filhos de forma assíncrona
+az group delete --name rg-clyvovet-seuNomeRM --yes --no-wait
+echo "🧹 Limpeza de recursos agendada no Azure com sucesso!"
 ```

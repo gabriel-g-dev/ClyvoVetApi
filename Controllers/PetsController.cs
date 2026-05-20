@@ -1,151 +1,142 @@
+using ClyvoVetApi.DTOs.Request;
+using ClyvoVetApi.DTOs.Response;
+using ClyvoVetApi.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ClyvoVetApi.Data;
-using ClyvoVetApi.Models;
 
 namespace ClyvoVetApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class PetsController : ControllerBase
+[Produces("application/json")]
+public class PetsController(IPetService service) : ControllerBase
 {
-    private readonly AppDbContext _context;
-
-    public PetsController(AppDbContext context)
-    {
-        _context = context;
-    }
+    private readonly IPetService _service = service;
 
     /// <summary>
-    /// Lista todos os pets
+    /// Lista todos os pets com paginação
     /// </summary>
+    /// <param name="page">Número da página (inicia em 1)</param>
+    /// <param name="pageSize">Tamanho da página (padrão 10)</param>
+    /// <returns>Retorna uma lista paginada de pets</returns>
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Pet>>> GetPets()
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponseDto<PetResponseDto>))]
+    public async Task<IActionResult> GetPets(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10)
     {
-        return Ok(await _context.Pets.Include(p => p.Tutor).ToListAsync());
+        var result = await _service.GetAllAsync(page, pageSize);
+        return Ok(result);
     }
 
     /// <summary>
     /// Busca um pet pelo seu ID
     /// </summary>
-    [HttpGet("{id}")]
-    public async Task<ActionResult<Pet>> GetPet(int id)
+    /// <param name="id">ID do pet</param>
+    /// <returns>Retorna os detalhes do pet, seu tutor e seu histórico de vacinas e consultas</returns>
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PetDetailsResponseDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> GetPet(int id)
     {
-        var pet = await _context.Pets.Include(p => p.Tutor)
-                                     .Include(p => p.Consultas)
-                                     .Include(p => p.Vacinas)
-                                     .FirstOrDefaultAsync(p => p.Id == id);
-        if (pet == null)
-            return NotFound(new { mensagem = "Pet não encontrado." });
-
-        return Ok(pet);
+        var result = await _service.GetByIdAsync(id);
+        return Ok(result);
     }
 
     /// <summary>
     /// Busca pets por espécie
     /// </summary>
+    /// <param name="especie">Espécie do pet (Ex: Cachorro, Gato)</param>
+    /// <returns>Retorna uma lista de pets da espécie informada</returns>
     [HttpGet("especie/{especie}")]
-    public async Task<ActionResult> GetPetsByEspecie(string especie)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<PetResponseDto>))]
+    public async Task<IActionResult> GetPetsByEspecie(string especie)
     {
-        var pets = await _context.Pets.Include(p => p.Tutor)
-                                      .Where(p => p.Especie.ToLower() == especie.ToLower())
-                                      .ToListAsync();
-        return Ok(pets);
+        var result = await _service.GetByEspecieAsync(especie);
+        return Ok(result);
     }
 
     /// <summary>
     /// Busca pets por raça
     /// </summary>
+    /// <param name="raca">Raça do pet (Ex: Golden Retriever, Persa)</param>
+    /// <returns>Retorna uma lista de pets da raça informada</returns>
     [HttpGet("raca/{raca}")]
-    public async Task<ActionResult> GetPetsByRaca(string raca)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<PetResponseDto>))]
+    public async Task<IActionResult> GetPetsByRaca(string raca)
     {
-        var pets = await _context.Pets.Include(p => p.Tutor)
-                                      .Where(p => p.Raca.ToLower() == raca.ToLower())
-                                      .ToListAsync();
-        return Ok(pets);
+        var result = await _service.GetByRacaAsync(raca);
+        return Ok(result);
     }
 
     /// <summary>
-    /// Lista as vacinas de um pet
+    /// Lista as vacinas de um pet específico
     /// </summary>
-    [HttpGet("{id}/vacinas")]
-    public async Task<ActionResult> GetVacinasDoPet(int id)
+    /// <param name="id">ID do pet</param>
+    /// <returns>Lista de vacinas aplicadas ou agendadas do pet</returns>
+    [HttpGet("{id:int}/vacinas")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<VacinaResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> GetVacinasDoPet(int id)
     {
-        var pet = await _context.Pets.Include(p => p.Vacinas)
-                                     .FirstOrDefaultAsync(p => p.Id == id);
-        if (pet == null)
-            return NotFound(new { mensagem = "Pet não encontrado." });
-
-        return Ok(pet.Vacinas);
+        var result = await _service.GetByIdAsync(id);
+        return Ok(result.Vacinas);
     }
 
     /// <summary>
-    /// Lista as consultas de um pet
+    /// Lista as consultas de um pet específico
     /// </summary>
-    [HttpGet("{id}/consultas")]
-    public async Task<ActionResult> GetConsultasDoPet(int id)
+    /// <param name="id">ID do pet</param>
+    /// <returns>Lista de consultas realizadas ou agendadas do pet</returns>
+    [HttpGet("{id:int}/consultas")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ConsultaResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> GetConsultasDoPet(int id)
     {
-        var pet = await _context.Pets.Include(p => p.Consultas)
-                                     .FirstOrDefaultAsync(p => p.Id == id);
-        if (pet == null)
-            return NotFound(new { mensagem = "Pet não encontrado." });
-
-        return Ok(pet.Consultas);
+        var result = await _service.GetByIdAsync(id);
+        return Ok(result.Consultas);
     }
 
     /// <summary>
     /// Cadastra um novo pet
     /// </summary>
+    /// <param name="dto">Dados para cadastro do pet</param>
+    /// <returns>Retorna o pet recém-criado</returns>
     [HttpPost]
-    public async Task<ActionResult<Pet>> PostPet(Pet pet)
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(PetDetailsResponseDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> PostPet([FromBody] PetRequestDto dto)
     {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
-
-        _context.Pets.Add(pet);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetPet), new { id = pet.Id }, pet);
+        var result = await _service.CreateAsync(dto);
+        return CreatedAtAction(nameof(GetPet), new { id = result.Id }, result);
     }
 
     /// <summary>
-    /// Atualiza as informações de um pet
+    /// Atualiza as informações de um pet existente
     /// </summary>
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutPet(int id, Pet pet)
+    /// <param name="id">ID do pet</param>
+    /// <param name="dto">Novos dados do pet</param>
+    /// <returns>Retorna o pet atualizado</returns>
+    [HttpPut("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PetDetailsResponseDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> PutPet(int id, [FromBody] PetRequestDto dto)
     {
-        if (id != pet.Id)
-            return BadRequest(new { mensagem = "ID da URL diferente do corpo da requisição." });
-
-        _context.Entry(pet).State = EntityState.Modified;
-
-        try
-        {
-            await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateConcurrencyException)
-        {
-            if (!_context.Pets.Any(p => p.Id == id))
-                return NotFound(new { mensagem = "Pet não encontrado." });
-            throw;
-        }
-
-        return NoContent();
+        var result = await _service.UpdateAsync(id, dto);
+        return Ok(result);
     }
 
     /// <summary>
     /// Remove um pet pelo seu ID
     /// </summary>
-    [HttpDelete("{id}")]
+    /// <param name="id">ID do pet</param>
+    /// <returns>Retorna 204 NoContent</returns>
+    [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> DeletePet(int id)
     {
-        var pet = await _context.Pets.FindAsync(id);
-        if (pet == null)
-            return NotFound(new { mensagem = "Pet não encontrado." });
-
-        _context.Pets.Remove(pet);
-        await _context.SaveChangesAsync();
-
+        await _service.DeleteAsync(id);
         return NoContent();
     }
 }
