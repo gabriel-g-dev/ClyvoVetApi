@@ -1,6 +1,6 @@
 # 🐾 ClyvoVet API — Infraestrutura de Medicina Veterinária Digital
 
-API RESTful empresarial de alto desempenho desenvolvida em **ASP.NET Core (.NET 10)** para a gestão da jornada contínua e preventiva de saúde de pets. Desenvolvido para o **FIAP Challenge 2026** em parceria com a **Clyvo VET**.
+API RESTful empresarial de alto desempenho desenvolvida em **ASP.NET Core (.NET 9)** para a gestão da jornada contínua e preventiva de saúde de pets. Desenvolvido para o **FIAP Challenge 2026** em parceria com a **Clyvo VET**.
 
 ---
 
@@ -31,7 +31,7 @@ graph TD
     Client[Cliente HTTP / Swagger UI] -->|1. Requisição JSON / DTO| Controller[Controllers Layer]
     Controller -->|2. Encaminha DTO| Service[Services Layer - Business Logic]
     Service -->|3. Validações e Regras| Repositories[Repositories Layer - Data Access]
-    Repositories -->|4. Consulta LINQ| EF[Entity Framework Core 9 / 10]
+    Repositories -->|4. Consulta LINQ| EF[Entity Framework Core 9]
     EF -->|5. SQL Dinâmico| DB[(Oracle Database XE)]
     
     %% Interceptação de Erros
@@ -70,6 +70,7 @@ graph TD
 | **GET** | `/api/pets/raca/{raca}` | Lista pets pertencentes à raça especificada. | `200 OK` |
 | **GET** | `/api/pets/{id}/vacinas` | Retorna o calendário e histórico vacinal detalhado do pet. | `200 OK`, `404 Not Found` |
 | **GET** | `/api/pets/{id}/consultas` | Retorna o histórico de consultas e agendamentos do pet. | `200 OK`, `404 Not Found` |
+| **GET** | `/api/pets/{id}/inteligencia-preventiva` | Retorna a análise preditiva, score de saúde preventiva (0 a 100) e alertas dinâmicos do pet (Intelligence Engine). | `200 OK`, `404 Not Found` |
 | **POST** | `/api/pets` | Cadastra um novo pet associando a um tutor válido. | `201 Created`, `400 Bad Request` |
 | **PUT** | `/api/pets/{id}` | Atualiza informações detalhadas de um pet. | `200 OK`, `400 Bad Request`, `404 Not Found` |
 | **DELETE** | `/api/pets/{id}` | Remove o registro de um pet. | `204 NoContent`, `404 Not Found` |
@@ -102,7 +103,7 @@ graph TD
 ## ⚙️ Como Executar Localmente
 
 ### Pré-requisitos
-* [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) instalado.
+* [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0) instalado.
 * Acesso ao banco de dados Oracle da FIAP (ou utilização do Docker-compose para subir banco local).
 * [Docker Desktop](https://www.docker.com/products/docker-desktop/) (caso queira rodar via contêineres).
 
@@ -130,7 +131,7 @@ dotnet restore
 dotnet build
 ```
 
-**4. Execute as migrações (EF Core Migrations):**
+**4. Executar as migrações (EF Core Migrations):**
 ```bash
 dotnet ef database update
 ```
@@ -143,7 +144,7 @@ A API iniciará localmente e estará acessível em: [http://localhost:5109](http
 O Swagger com a documentação interativa e comentários XML estará em: [http://localhost:5109/swagger](http://localhost:5109/swagger).
 
 **6. Execute os Testes Unitários:**
-O projeto conta com uma suíte de **44 testes unitários automatizados** implementada em **xUnit** e **Moq**, cobrindo 100% dos fluxos e regras de negócio da camada de serviços (`Services`). Para rodá-los:
+O projeto conta com uma suíte de **51 testes unitários automatizados** implementada em **xUnit** e **Moq**, cobrindo 100% dos fluxos e regras de negócio da camada de serviços (`Services`) e o motor de Inteligência Preventiva. Para rodá-los:
 ```bash
 dotnet test
 ```
