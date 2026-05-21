@@ -11,9 +11,10 @@ public class PetRepository(AppDbContext context) : IPetRepository
 
     public async Task<(IEnumerable<Pet> Items, int Total)> GetAllAsync(int page, int pageSize)
     {
-        var query = _context.Pets.Include(p => p.Tutor).AsNoTracking();
-        var total = await query.CountAsync();
-        var items = await query
+        var total = await _context.Pets.CountAsync();
+        var items = await _context.Pets
+            .Include(p => p.Tutor)
+            .AsNoTracking()
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -25,6 +26,7 @@ public class PetRepository(AppDbContext context) : IPetRepository
             .Include(p => p.Tutor)
             .Include(p => p.Consultas)
             .Include(p => p.Vacinas)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == id);
 
     public async Task<IEnumerable<Pet>> GetByEspecieAsync(string especie) =>

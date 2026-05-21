@@ -11,9 +11,10 @@ public class ConsultaRepository(AppDbContext context) : IConsultaRepository
 
     public async Task<(IEnumerable<Consulta> Items, int Total)> GetAllAsync(int page, int pageSize)
     {
-        var query = _context.Consultas.Include(c => c.Pet).AsNoTracking();
-        var total = await query.CountAsync();
-        var items = await query
+        var total = await _context.Consultas.CountAsync();
+        var items = await _context.Consultas
+            .Include(c => c.Pet)
+            .AsNoTracking()
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

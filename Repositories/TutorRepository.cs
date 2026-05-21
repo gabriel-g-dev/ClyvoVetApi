@@ -11,9 +11,10 @@ public class TutorRepository(AppDbContext context) : ITutorRepository
 
     public async Task<(IEnumerable<Tutor> Items, int Total)> GetAllAsync(int page, int pageSize)
     {
-        var query = _context.Tutores.Include(t => t.Pets).AsNoTracking();
-        var total = await query.CountAsync();
-        var items = await query
+        var total = await _context.Tutores.CountAsync();
+        var items = await _context.Tutores
+            .Include(t => t.Pets)
+            .AsNoTracking()
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();

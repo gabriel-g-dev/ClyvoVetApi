@@ -8,9 +8,10 @@ namespace ClyvoVetApi.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-public class PetsController(IPetService service) : ControllerBase
+public class PetsController(IPetService service, IIntelligenceService intelligenceService) : ControllerBase
 {
     private readonly IPetService _service = service;
+    private readonly IIntelligenceService _intelligenceService = intelligenceService;
 
     /// <summary>
     /// Lista todos os pets com paginação
@@ -138,5 +139,19 @@ public class PetsController(IPetService service) : ControllerBase
     {
         await _service.DeleteAsync(id);
         return NoContent();
+    }
+
+    /// <summary>
+    /// Calcula o score de saúde preventiva do pet e gera recomendações inteligentes
+    /// </summary>
+    /// <param name="id">ID do pet</param>
+    /// <returns>Dashboard de saúde preventiva do pet</returns>
+    [HttpGet("{id:int}/inteligencia-preventiva")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(HealthDashboardResponseDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
+    public async Task<IActionResult> GetIntelligencePreventiva(int id)
+    {
+        var result = await _intelligenceService.GetIntelligencePreventivaAsync(id);
+        return Ok(result);
     }
 }

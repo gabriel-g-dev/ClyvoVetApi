@@ -11,9 +11,10 @@ public class VacinaRepository(AppDbContext context) : IVacinaRepository
 
     public async Task<(IEnumerable<Vacina> Items, int Total)> GetAllAsync(int page, int pageSize)
     {
-        var query = _context.Vacinas.Include(v => v.Pet).AsNoTracking();
-        var total = await query.CountAsync();
-        var items = await query
+        var total = await _context.Vacinas.CountAsync();
+        var items = await _context.Vacinas
+            .Include(v => v.Pet)
+            .AsNoTracking()
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
