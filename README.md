@@ -50,7 +50,143 @@ graph TD
 
 ## 🔗 Rotas da API e Documentação
 
-### Tutores (`/api/tutores`)
+> **Base URL (local):** `http://localhost:5109`  
+> **Base URL (Docker):** `http://localhost:8080`  
+> **Swagger UI:** `/swagger`
+
+---
+
+### 👤 Donos (Tutores) — `/api/tutores`
+> Tabela Oracle: `DONOS`
+
+| Método | Rota | Descrição | Status HTTP |
+|--------|------|-----------|-------------|
+| `GET` | `/api/tutores?page=1&pageSize=10` | Lista todos os donos com paginação | `200 OK` |
+| `GET` | `/api/tutores/{id}` | Busca dono por ID com lista de pets | `200 OK`, `404` |
+| `GET` | `/api/tutores/email/{email}` | Busca dono por e-mail | `200 OK`, `404` |
+| `GET` | `/api/tutores/{id}/pets` | Lista os pets do dono | `200 OK`, `404` |
+| `POST` | `/api/tutores` | Cadastra novo dono | `201 Created`, `400` |
+| `PUT` | `/api/tutores/{id}` | Atualiza dados do dono | `200 OK`, `400`, `404` |
+| `DELETE` | `/api/tutores/{id}` | Remove dono | `204 NoContent`, `404` |
+
+**Body POST/PUT:**
+```json
+{ "nome": "João Silva", "email": "joao@email.com", "telefone": "11999999999" }
+```
+
+---
+
+### 🐾 Pets — `/api/pets`
+> Tabela Oracle: `PETS`
+
+| Método | Rota | Descrição | Status HTTP |
+|--------|------|-----------|-------------|
+| `GET` | `/api/pets?page=1&pageSize=10` | Lista todos os pets com paginação | `200 OK` |
+| `GET` | `/api/pets/{id}` | Detalha pet com tutor, vacinas e consultas | `200 OK`, `404` |
+| `GET` | `/api/pets/especie/{especie}` | Filtra pets por espécie | `200 OK` |
+| `GET` | `/api/pets/raca/{raca}` | Filtra pets por raça | `200 OK` |
+| `GET` | `/api/pets/{id}/vacinas` | Histórico de vacinas do pet | `200 OK`, `404` |
+| `GET` | `/api/pets/{id}/consultas` | Histórico de consultas do pet | `200 OK`, `404` |
+| `GET` | `/api/pets/{id}/inteligencia-preventiva` | Score de saúde preventiva (0–100) e alertas dinâmicos | `200 OK`, `404` |
+| `POST` | `/api/pets` | Cadastra novo pet | `201 Created`, `400` |
+| `PUT` | `/api/pets/{id}` | Atualiza dados do pet | `200 OK`, `400`, `404` |
+| `DELETE` | `/api/pets/{id}` | Remove pet | `204 NoContent`, `404` |
+
+**Body POST/PUT:**
+```json
+{
+  "nome": "Rex", "especie": "Cachorro", "raca": "Labrador",
+  "dataNascimento": "2020-01-15", "peso": 25.50, "tutorId": 1
+}
+```
+
+---
+
+### 🩺 Consultas — `/api/consultas`
+> Tabela Oracle: `CONSULTAS` — Status: `A` = Agendada | `C` = Cancelada | `R` = Realizada
+
+| Método | Rota | Descrição | Status HTTP |
+|--------|------|-----------|-------------|
+| `GET` | `/api/consultas?page=1&pageSize=10` | Lista todas as consultas com paginação | `200 OK` |
+| `GET` | `/api/consultas/{id}` | Busca consulta por ID | `200 OK`, `404` |
+| `GET` | `/api/consultas/status/{status}` | Filtra por status: `A`, `C` ou `R` | `200 OK` |
+| `GET` | `/api/consultas/periodo?inicio=&fim=` | Filtra por intervalo de datas | `200 OK`, `400` |
+| `POST` | `/api/consultas` | Registra nova consulta | `201 Created`, `400` |
+| `PUT` | `/api/consultas/{id}` | Atualiza consulta | `200 OK`, `400`, `404` |
+| `DELETE` | `/api/consultas/{id}` | Remove consulta | `204 NoContent`, `404` |
+
+**Body POST/PUT:**
+```json
+{
+  "data": "2026-06-10T14:00:00", "tipo": "Consulta de Rotina",
+  "descricao": "Checkup anual completo", "valor": 150.00,
+  "status": "A", "petId": 1, "funcionarioId": 1
+}
+```
+
+---
+
+### 💉 Vacinas — `/api/vacinas`
+> Tabela Oracle: `VACINAS` — Status: `P` = Pendente | `A` = Aplicada
+
+| Método | Rota | Descrição | Status HTTP |
+|--------|------|-----------|-------------|
+| `GET` | `/api/vacinas?page=1&pageSize=10` | Lista todas as vacinas com paginação | `200 OK` |
+| `GET` | `/api/vacinas/{id}` | Busca vacina por ID | `200 OK`, `404` |
+| `GET` | `/api/vacinas/pendentes` | Lista vacinas com status `P` | `200 OK` |
+| `GET` | `/api/vacinas/nome/{nome}` | Filtra vacinas por nome | `200 OK` |
+| `POST` | `/api/vacinas` | Registra nova vacina | `201 Created`, `400` |
+| `PUT` | `/api/vacinas/{id}` | Atualiza vacina | `200 OK`, `400`, `404` |
+| `DELETE` | `/api/vacinas/{id}` | Remove vacina | `204 NoContent`, `404` |
+
+**Body POST/PUT:**
+```json
+{ "nome": "Antirrábica", "dataAplicacao": "2026-06-01", "status": "A", "petId": 1 }
+```
+
+---
+
+### 👷 Funcionários — `/api/funcionarios`
+> Tabela Oracle: `FUNCIONARIOS`
+
+| Método | Rota | Descrição | Status HTTP |
+|--------|------|-----------|-------------|
+| `GET` | `/api/funcionarios` | Lista todos os funcionários | `200 OK` |
+| `GET` | `/api/funcionarios/{id}` | Busca funcionário por ID | `200 OK`, `404` |
+| `GET` | `/api/funcionarios/setor/{setor}` | Filtra por setor | `200 OK` |
+| `POST` | `/api/funcionarios` | Cadastra novo funcionário | `201 Created`, `400` |
+| `PUT` | `/api/funcionarios/{id}` | Atualiza funcionário | `200 OK`, `404` |
+| `DELETE` | `/api/funcionarios/{id}` | Remove funcionário | `204 NoContent`, `404` |
+
+**Body POST/PUT:**
+```json
+{
+  "nome": "Dra. Ana Souza", "setor": "Clínica Geral",
+  "cargo": "Veterinária", "email": "ana@clyvovet.com", "telefone": "11988888888"
+}
+```
+
+---
+
+### 💊 Medicamentos — `/api/medicamentos`
+> Tabela Oracle: `MEDICAMENTOS`
+
+| Método | Rota | Descrição | Status HTTP |
+|--------|------|-----------|-------------|
+| `GET` | `/api/medicamentos` | Lista todos os medicamentos | `200 OK` |
+| `GET` | `/api/medicamentos/{id}` | Busca medicamento por ID | `200 OK`, `404` |
+| `POST` | `/api/medicamentos` | Cadastra novo medicamento | `201 Created`, `400` |
+| `PUT` | `/api/medicamentos/{id}` | Atualiza medicamento | `200 OK`, `404` |
+| `DELETE` | `/api/medicamentos/{id}` | Remove medicamento | `204 NoContent`, `404` |
+
+**Body POST/PUT:**
+```json
+{ "nome": "Amoxicilina" }
+```
+
+---
+
+
 | Método | Rota | Descrição | Status de Resposta (HTTP) |
 |--------|------|-----------|---------------------------|
 | **GET** | `/api/tutores` | Lista todos os tutores com paginação. | `200 OK` (PagedResponse) |

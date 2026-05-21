@@ -31,8 +31,8 @@ public class AlertScheduler(
 
                 var vacinasPendentes = await context.Vacinas
                     .Include(v => v.Pet)
-                        .ThenInclude(p => p!.Tutor)
-                    .Where(v => !v.Aplicada && v.ProximaDose.HasValue && v.ProximaDose.Value <= limiteData)
+                        .ThenInclude(p => p!.Dono)
+                    .Where(v => v.Status == "P" && v.Data <= limiteData)
                     .ToListAsync(stoppingToken);
 
                 if (vacinasPendentes.Count == 0)
@@ -46,21 +46,21 @@ public class AlertScheduler(
                 foreach (var vacina in vacinasPendentes)
                 {
                     var pet = vacina.Pet;
-                    var tutor = pet?.Tutor;
+                    var dono = pet?.Dono;
 
-                    if (tutor != null && pet != null)
+                    if (dono != null && pet != null)
                     {
-                        var statusVacina = vacina.ProximaDose!.Value < DateTime.Today ? "VENCIDA ❌" : "PRÓXIMA 📅";
-                        var mensagem = $"Olá, {tutor.Nome}! Lembramos que a vacina {vacina.Nome} de seu pet {pet.Nome} está {statusVacina}. Por favor, agende uma consulta no ClyvoVet.";
+                        var statusVacina = vacina.Data < DateTime.Today ? "VENCIDA ❌" : "PRÓXIMA 📅";
+                        var mensagem = $"Olá, {dono.Nome}! Lembramos que a vacina {vacina.Nome} de seu pet {pet.Nome} está {statusVacina}. Por favor, agende uma consulta no ClyvoVet.";
 
                         _logger.LogWarning(
-                            "🔔 [NOTIFICAÇÃO ENVIADA] Destinatário: {TutorNome} <{TutorEmail}> | Pet: {PetNome} | Vacina: {VacinaNome} | Status: {Status} | Data Limite: {ProximaDose:dd/MM/yyyy}. Mensagem: '{Mensagem}'",
-                            tutor.Nome,
-                            tutor.Email,
+                            "🔔 [NOTIFICAÇÃO ENVIADA] Destinatário: {DonoNome} <{DonoEmail}> | Pet: {PetNome} | Vacina: {VacinaNome} | Status: {Status} | Data Limite: {Data:dd/MM/yyyy}. Mensagem: '{Mensagem}'",
+                            dono.Nome,
+                            dono.Email,
                             pet.Nome,
                             vacina.Nome,
                             statusVacina,
-                            vacina.ProximaDose.Value,
+                            vacina.Data,
                             mensagem
                         );
                     }
