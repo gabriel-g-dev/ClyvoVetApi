@@ -26,33 +26,36 @@ public class IntelligenceService(IPetRepository petRepository) : IIntelligenceSe
 
         foreach (var vacina in pet.Vacinas)
         {
-            if (!vacina.Aplicada)
+            if (vacina.Status == "P")
             {
-                if (vacina.ProximaDose.HasValue)
+                if (vacina.Data < DateTime.Today)
                 {
-                    if (vacina.ProximaDose.Value < DateTime.Today)
-                    {
-                        vacinasAtrasadas++;
-                        score -= 15;
-                    }
-                    else if (vacina.ProximaDose.Value <= DateTime.Today.AddDays(7))
-                    {
-                        vacinasPendentes++;
-                        score -= 5;
-                    }
+                    vacinasAtrasadas++;
+                    score -= 15;
+                }
+                else if (vacina.Data <= DateTime.Today.AddDays(7))
+                {
+                    vacinasPendentes++;
+                    score -= 5;
                 }
             }
         }
 
         // 2. Análise de consultas
+        var consultasRealizadas = pet.Consultas.Where(c => c.Status == "R").ToList();
         if (pet.Consultas.Count == 0)
         {
             score -= 20;
             recomendacoes.Add("🏥 Nenhuma consulta preventiva foi registrada ainda. Recomendamos agendar uma consulta inicial com o veterinário.");
         }
+        else if (consultasRealizadas.Count == 0)
+        {
+            score -= 20;
+            recomendacoes.Add("🏥 Nenhuma consulta foi realizada ainda. Recomendamos comparecer a uma consulta de rotina.");
+        }
         else
         {
-            var ultimaConsulta = pet.Consultas.Max(c => c.Data);
+            var ultimaConsulta = consultasRealizadas.Max(c => c.Data);
             if (ultimaConsulta < DateTime.Today.AddMonths(-6))
             {
                 score -= 10;

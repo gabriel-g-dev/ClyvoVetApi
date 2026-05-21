@@ -61,9 +61,8 @@ public class VacinaService(IVacinaRepository repository, IPetRepository petRepos
         var vacina = new Vacina
         {
             Nome = dto.Nome,
-            DataAplicacao = dto.DataAplicacao,
-            ProximaDose = dto.ProximaDose,
-            Aplicada = dto.Aplicada,
+            Data = dto.Data,
+            Status = dto.Status,
             PetId = dto.PetId
         };
 
@@ -82,9 +81,8 @@ public class VacinaService(IVacinaRepository repository, IPetRepository petRepos
             ?? throw new BusinessException($"Pet associado com ID {dto.PetId} não encontrado.");
 
         vacina.Nome = dto.Nome;
-        vacina.DataAplicacao = dto.DataAplicacao;
-        vacina.ProximaDose = dto.ProximaDose;
-        vacina.Aplicada = dto.Aplicada;
+        vacina.Data = dto.Data;
+        vacina.Status = dto.Status;
         vacina.PetId = dto.PetId;
 
         var updated = await _repository.UpdateAsync(vacina);
@@ -104,9 +102,8 @@ public class VacinaService(IVacinaRepository repository, IPetRepository petRepos
     {
         Id = v.Id,
         Nome = v.Nome,
-        DataAplicacao = v.DataAplicacao,
-        ProximaDose = v.ProximaDose,
-        Aplicada = v.Aplicada,
+        Data = v.Data,
+        Status = v.Status,
         PetId = v.PetId,
         PetNome = v.Pet?.Nome ?? string.Empty
     };

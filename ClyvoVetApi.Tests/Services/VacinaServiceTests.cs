@@ -29,8 +29,8 @@ public class VacinaServiceTests
         var pageSize = 10;
         var vacinas = new List<Vacina>
         {
-            new() { Id = 1, Nome = "Antirrábica", Aplicada = true, PetId = 1 },
-            new() { Id = 2, Nome = "V10", Aplicada = false, PetId = 1 }
+            new() { Id = 1, Nome = "Antirrábica", Status = "A", Data = DateTime.Now, PetId = 1 },
+            new() { Id = 2, Nome = "V10", Status = "P", Data = DateTime.Now.AddDays(5), PetId = 1 }
         };
         _repositoryMock.Setup(r => r.GetAllAsync(page, pageSize))
             .ReturnsAsync((vacinas, 2));
@@ -50,7 +50,7 @@ public class VacinaServiceTests
     {
         // Arrange
         var id = 1;
-        var vacina = new Vacina { Id = id, Nome = "Antirrábica", Pet = new Pet { Id = 1, Nome = "Rex" } };
+        var vacina = new Vacina { Id = id, Nome = "Antirrábica", Status = "A", Data = DateTime.Now, Pet = new Pet { Id = 1, Nome = "Rex" } };
         _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(vacina);
 
         // Act
@@ -87,7 +87,7 @@ public class VacinaServiceTests
     public async Task CreateAsync_WhenPetDoesNotExist_ThrowsBusinessException()
     {
         // Arrange
-        var dto = new VacinaRequestDto { Nome = "Antirrábica", PetId = 99 };
+        var dto = new VacinaRequestDto { Nome = "Antirrábica", Status = "P", Data = DateTime.Now, PetId = 99 };
         _petRepositoryMock.Setup(p => p.GetByIdAsync(dto.PetId)).ReturnsAsync((Pet?)null);
 
         // Act & Assert
@@ -98,7 +98,7 @@ public class VacinaServiceTests
     public async Task CreateAsync_WhenSuccessful_ReturnsResponseDto()
     {
         // Arrange
-        var dto = new VacinaRequestDto { Nome = "Antirrábica", Aplicada = true, PetId = 1, DataAplicacao = DateTime.Now };
+        var dto = new VacinaRequestDto { Nome = "Antirrábica", Status = "A", Data = DateTime.Now, PetId = 1 };
         var pet = new Pet { Id = 1, Nome = "Rex" };
 
         _petRepositoryMock.Setup(p => p.GetByIdAsync(dto.PetId)).ReturnsAsync(pet);
@@ -119,7 +119,7 @@ public class VacinaServiceTests
     {
         // Arrange
         var id = 99;
-        var dto = new VacinaRequestDto { Nome = "Antirrábica", PetId = 1 };
+        var dto = new VacinaRequestDto { Nome = "Antirrábica", Status = "P", Data = DateTime.Now, PetId = 1 };
         _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((Vacina?)null);
 
         // Act & Assert
@@ -131,8 +131,8 @@ public class VacinaServiceTests
     {
         // Arrange
         var id = 1;
-        var vacina = new Vacina { Id = id, Nome = "Antirrábica", PetId = 1 };
-        var dto = new VacinaRequestDto { Nome = "Antirrábica", PetId = 99 };
+        var vacina = new Vacina { Id = id, Nome = "Antirrábica", Status = "P", Data = DateTime.Now, PetId = 1 };
+        var dto = new VacinaRequestDto { Nome = "Antirrábica", Status = "A", Data = DateTime.Now, PetId = 99 };
 
         _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(vacina);
         _petRepositoryMock.Setup(p => p.GetByIdAsync(dto.PetId)).ReturnsAsync((Pet?)null);
@@ -146,9 +146,9 @@ public class VacinaServiceTests
     {
         // Arrange
         var id = 1;
-        var vacina = new Vacina { Id = id, Nome = "Antirrábica", PetId = 1 };
+        var vacina = new Vacina { Id = id, Nome = "Antirrábica", Status = "P", Data = DateTime.Now, PetId = 1 };
         var pet = new Pet { Id = 1, Nome = "Rex" };
-        var dto = new VacinaRequestDto { Nome = "Antirrábica Alterada", Aplicada = true, PetId = 1 };
+        var dto = new VacinaRequestDto { Nome = "Antirrábica Alterada", Status = "A", Data = DateTime.Now, PetId = 1 };
 
         _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(vacina);
         _petRepositoryMock.Setup(p => p.GetByIdAsync(1)).ReturnsAsync(pet);

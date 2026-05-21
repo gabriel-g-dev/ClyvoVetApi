@@ -13,7 +13,7 @@ public class PetRepository(AppDbContext context) : IPetRepository
     {
         var total = await _context.Pets.CountAsync();
         var items = await _context.Pets
-            .Include(p => p.Tutor)
+            .Include(p => p.Dono)
             .AsNoTracking()
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -23,7 +23,7 @@ public class PetRepository(AppDbContext context) : IPetRepository
 
     public async Task<Pet?> GetByIdAsync(int id) =>
         await _context.Pets
-            .Include(p => p.Tutor)
+            .Include(p => p.Dono)
             .Include(p => p.Consultas)
             .Include(p => p.Vacinas)
             .AsSplitQuery()
@@ -31,14 +31,14 @@ public class PetRepository(AppDbContext context) : IPetRepository
 
     public async Task<IEnumerable<Pet>> GetByEspecieAsync(string especie) =>
         await _context.Pets
-            .Include(p => p.Tutor)
+            .Include(p => p.Dono)
             .AsNoTracking()
             .Where(p => p.Especie.ToLower() == especie.ToLower())
             .ToListAsync();
 
     public async Task<IEnumerable<Pet>> GetByRacaAsync(string raca) =>
         await _context.Pets
-            .Include(p => p.Tutor)
+            .Include(p => p.Dono)
             .AsNoTracking()
             .Where(p => p.Raca.ToLower() == raca.ToLower())
             .ToListAsync();

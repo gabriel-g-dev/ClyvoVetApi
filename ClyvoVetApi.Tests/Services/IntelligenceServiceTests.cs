@@ -39,8 +39,8 @@ public class IntelligenceServiceTests
         {
             Id = petId,
             Nome = "Bidu",
-            Consultas = new List<Consulta> { new() { Data = DateTime.Today } },
-            Vacinas = new List<Vacina> { new() { Aplicada = true, ProximaDose = DateTime.Today.AddMonths(6) } }
+            Consultas = new List<Consulta> { new() { Status = "R", Data = DateTime.Today } },
+            Vacinas = new List<Vacina> { new() { Status = "A", Data = DateTime.Today.AddMonths(-6) } }
         };
         _petRepositoryMock.Setup(r => r.GetByIdAsync(petId)).ReturnsAsync(pet);
 
@@ -63,10 +63,10 @@ public class IntelligenceServiceTests
         {
             Id = petId,
             Nome = "Bidu",
-            Consultas = new List<Consulta> { new() { Data = DateTime.Today } },
+            Consultas = new List<Consulta> { new() { Status = "R", Data = DateTime.Today } },
             Vacinas = new List<Vacina> 
             { 
-                new() { Aplicada = false, ProximaDose = DateTime.Today.AddDays(-5) } // Overdue: -15
+                new() { Status = "P", Data = DateTime.Today.AddDays(-5) } // Overdue: -15
             }
         };
         _petRepositoryMock.Setup(r => r.GetByIdAsync(petId)).ReturnsAsync(pet);
@@ -90,10 +90,10 @@ public class IntelligenceServiceTests
         {
             Id = petId,
             Nome = "Bidu",
-            Consultas = new List<Consulta> { new() { Data = DateTime.Today } },
+            Consultas = new List<Consulta> { new() { Status = "R", Data = DateTime.Today } },
             Vacinas = new List<Vacina> 
             { 
-                new() { Aplicada = false, ProximaDose = DateTime.Today.AddDays(3) } // Pending in next 7 days: -5
+                new() { Status = "P", Data = DateTime.Today.AddDays(3) } // Pending in next 7 days: -5
             }
         };
         _petRepositoryMock.Setup(r => r.GetByIdAsync(petId)).ReturnsAsync(pet);
@@ -118,7 +118,7 @@ public class IntelligenceServiceTests
             Id = petId,
             Nome = "Bidu",
             Consultas = new List<Consulta>(), // No consultations: -20
-            Vacinas = new List<Vacina> { new() { Aplicada = true, ProximaDose = DateTime.Today.AddMonths(6) } }
+            Vacinas = new List<Vacina> { new() { Status = "A", Data = DateTime.Today.AddMonths(-6) } }
         };
         _petRepositoryMock.Setup(r => r.GetByIdAsync(petId)).ReturnsAsync(pet);
 
@@ -141,8 +141,8 @@ public class IntelligenceServiceTests
         {
             Id = petId,
             Nome = "Bidu",
-            Consultas = new List<Consulta> { new() { Data = DateTime.Today.AddMonths(-7) } }, // Old consultation (>6 months): -10
-            Vacinas = new List<Vacina> { new() { Aplicada = true, ProximaDose = DateTime.Today.AddMonths(6) } }
+            Consultas = new List<Consulta> { new() { Status = "R", Data = DateTime.Today.AddMonths(-7) } }, // Old consultation (>6 months): -10
+            Vacinas = new List<Vacina> { new() { Status = "A", Data = DateTime.Today.AddMonths(-6) } }
         };
         _petRepositoryMock.Setup(r => r.GetByIdAsync(petId)).ReturnsAsync(pet);
 
@@ -168,12 +168,12 @@ public class IntelligenceServiceTests
             Consultas = new List<Consulta>(), // No consultations: -20
             Vacinas = new List<Vacina> 
             { 
-                new() { Aplicada = false, ProximaDose = DateTime.Today.AddDays(-10) }, // Overdue: -15
-                new() { Aplicada = false, ProximaDose = DateTime.Today.AddDays(-20) }, // Overdue: -15
-                new() { Aplicada = false, ProximaDose = DateTime.Today.AddDays(-30) }, // Overdue: -15
-                new() { Aplicada = false, ProximaDose = DateTime.Today.AddDays(-40) }, // Overdue: -15
-                new() { Aplicada = false, ProximaDose = DateTime.Today.AddDays(-50) }, // Overdue: -15
-                new() { Aplicada = false, ProximaDose = DateTime.Today.AddDays(-60) }  // Overdue: -15
+                new() { Status = "P", Data = DateTime.Today.AddDays(-10) }, // Overdue: -15
+                new() { Status = "P", Data = DateTime.Today.AddDays(-20) }, // Overdue: -15
+                new() { Status = "P", Data = DateTime.Today.AddDays(-30) }, // Overdue: -15
+                new() { Status = "P", Data = DateTime.Today.AddDays(-40) }, // Overdue: -15
+                new() { Status = "P", Data = DateTime.Today.AddDays(-50) }, // Overdue: -15
+                new() { Status = "P", Data = DateTime.Today.AddDays(-60) }  // Overdue: -15
             } // Total penalty = 20 + 6*15 = 110. Score should clamp to 0.
         };
         _petRepositoryMock.Setup(r => r.GetByIdAsync(petId)).ReturnsAsync(pet);

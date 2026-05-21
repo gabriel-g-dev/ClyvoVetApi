@@ -43,15 +43,15 @@ public class ConsultasController(IConsultaService service) : ControllerBase
     }
 
     /// <summary>
-    /// Busca consultas por veterinário
+    /// Lista as consultas de um funcionário específico (veterinário)
     /// </summary>
-    /// <param name="nome">Nome ou parte do nome do veterinário</param>
-    /// <returns>Lista de consultas realizadas pelo veterinário</returns>
-    [HttpGet("veterinario/{nome}")]
+    /// <param name="funcionarioId">ID do funcionário</param>
+    /// <returns>Lista de consultas realizadas ou agendadas pelo funcionário</returns>
+    [HttpGet("funcionario/{funcionarioId:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ConsultaResponseDto>))]
-    public async Task<IActionResult> GetConsultasByVeterinario(string nome)
+    public async Task<IActionResult> GetConsultasByFuncionario(int funcionarioId)
     {
-        var result = await _service.GetByVeterinarioAsync(nome);
+        var result = await _service.GetByFuncionarioIdAsync(funcionarioId);
         return Ok(result);
     }
 

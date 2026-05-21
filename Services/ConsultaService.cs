@@ -7,10 +7,14 @@ using ClyvoVetApi.Services.Interfaces;
 
 namespace ClyvoVetApi.Services;
 
-public class ConsultaService(IConsultaRepository repository, IPetRepository petRepository) : IConsultaService
+public class ConsultaService(
+    IConsultaRepository repository,
+    IPetRepository petRepository,
+    IFuncionarioRepository funcionarioRepository) : IConsultaService
 {
     private readonly IConsultaRepository _repository = repository;
     private readonly IPetRepository _petRepository = petRepository;
+    private readonly IFuncionarioRepository _funcionarioRepository = funcionarioRepository;
 
     public async Task<PagedResponseDto<ConsultaResponseDto>> GetAllAsync(int page, int pageSize)
     {
@@ -31,9 +35,9 @@ public class ConsultaService(IConsultaRepository repository, IPetRepository petR
         return ToResponseDto(consulta);
     }
 
-    public async Task<IEnumerable<ConsultaResponseDto>> GetByVeterinarioAsync(string nome)
+    public async Task<IEnumerable<ConsultaResponseDto>> GetByFuncionarioIdAsync(int funcionarioId)
     {
-        var items = await _repository.GetByVeterinarioAsync(nome);
+        var items = await _repository.GetByFuncionarioIdAsync(funcionarioId);
         return items.Select(ToResponseDto);
     }
 
@@ -51,17 +55,23 @@ public class ConsultaService(IConsultaRepository repository, IPetRepository petR
         var pet = await _petRepository.GetByIdAsync(dto.PetId)
             ?? throw new BusinessException($"Pet associado com ID {dto.PetId} não encontrado.");
 
+        var funcionario = await _funcionarioRepository.GetByIdAsync(dto.FuncionarioId)
+            ?? throw new BusinessException($"Funcionário associado com ID {dto.FuncionarioId} não encontrado.");
+
         var consulta = new Consulta
         {
-            Data = dto.Data,
+            Tipo = dto.Tipo,
+            Valor = dto.Valor,
             Descricao = dto.Descricao,
-            Veterinario = dto.Veterinario,
-            Observacoes = dto.Observacoes,
-            PetId = dto.PetId
+            Status = dto.Status,
+            Data = dto.Data,
+            PetId = dto.PetId,
+            FuncionarioId = dto.FuncionarioId
         };
 
         var created = await _repository.CreateAsync(consulta);
         created.Pet = pet;
+        created.Funcionario = funcionario;
 
         return ToResponseDto(created);
     }
@@ -74,14 +84,20 @@ public class ConsultaService(IConsultaRepository repository, IPetRepository petR
         var pet = await _petRepository.GetByIdAsync(dto.PetId)
             ?? throw new BusinessException($"Pet associado com ID {dto.PetId} não encontrado.");
 
-        consulta.Data = dto.Data;
+        var funcionario = await _funcionarioRepository.GetByIdAsync(dto.FuncionarioId)
+            ?? throw new BusinessException($"Funcionário associado com ID {dto.FuncionarioId} não encontrado.");
+
+        consulta.Tipo = dto.Tipo;
+        consulta.Valor = dto.Valor;
         consulta.Descricao = dto.Descricao;
-        consulta.Veterinario = dto.Veterinario;
-        consulta.Observacoes = dto.Observacoes;
+        consulta.Status = dto.Status;
+        consulta.Data = dto.Data;
         consulta.PetId = dto.PetId;
+        consulta.FuncionarioId = dto.FuncionarioId;
 
         var updated = await _repository.UpdateAsync(consulta);
         updated.Pet = pet;
+        updated.Funcionario = funcionario;
 
         return ToResponseDto(updated);
     }
@@ -96,11 +112,14 @@ public class ConsultaService(IConsultaRepository repository, IPetRepository petR
     private static ConsultaResponseDto ToResponseDto(Consulta c) => new()
     {
         Id = c.Id,
-        Data = c.Data,
+        Tipo = c.Tipo,
+        Valor = c.Valor,
         Descricao = c.Descricao,
-        Veterinario = c.Veterinario,
-        Observacoes = c.Observacoes,
+        Status = c.Status,
+        Data = c.Data,
         PetId = c.PetId,
-        PetNome = c.Pet?.Nome ?? string.Empty
+        PetNome = c.Pet?.Nome ?? string.Empty,
+        FuncionarioId = c.FuncionarioId,
+        FuncionarioNome = c.Funcionario?.Nome ?? string.Empty
     };
 }

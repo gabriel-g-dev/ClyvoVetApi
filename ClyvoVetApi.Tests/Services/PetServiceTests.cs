@@ -11,14 +11,14 @@ namespace ClyvoVetApi.Tests.Services;
 public class PetServiceTests
 {
     private readonly Mock<IPetRepository> _repositoryMock;
-    private readonly Mock<ITutorRepository> _tutorRepositoryMock;
+    private readonly Mock<IDonoRepository> _donoRepositoryMock;
     private readonly PetService _service;
 
     public PetServiceTests()
     {
         _repositoryMock = new Mock<IPetRepository>();
-        _tutorRepositoryMock = new Mock<ITutorRepository>();
-        _service = new PetService(_repositoryMock.Object, _tutorRepositoryMock.Object);
+        _donoRepositoryMock = new Mock<IDonoRepository>();
+        _service = new PetService(_repositoryMock.Object, _donoRepositoryMock.Object);
     }
 
     [Fact]
@@ -29,8 +29,8 @@ public class PetServiceTests
         var pageSize = 10;
         var pets = new List<Pet>
         {
-            new() { Id = 1, Nome = "Rex", Especie = "Cachorro", Raca = "Vira-lata", TutorId = 1 },
-            new() { Id = 2, Nome = "Mingau", Especie = "Gato", Raca = "Persa", TutorId = 1 }
+            new() { Id = 1, Nome = "Rex", Especie = "Cachorro", Raca = "Vira-lata", DonoId = 1, Peso = 10.5m },
+            new() { Id = 2, Nome = "Mingau", Especie = "Gato", Raca = "Persa", DonoId = 1, Peso = 4.2m }
         };
         _repositoryMock.Setup(r => r.GetAllAsync(page, pageSize))
             .ReturnsAsync((pets, 2));
@@ -50,7 +50,7 @@ public class PetServiceTests
     {
         // Arrange
         var id = 1;
-        var pet = new Pet { Id = id, Nome = "Rex", Especie = "Cachorro", Tutor = new Tutor { Id = 1, Nome = "Tutor" } };
+        var pet = new Pet { Id = id, Nome = "Rex", Especie = "Cachorro", Peso = 10.5m, Dono = new Dono { Id = 1, Nome = "Dono 1" } };
         _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(pet);
 
         // Act
@@ -60,7 +60,7 @@ public class PetServiceTests
         Assert.NotNull(result);
         Assert.Equal(id, result.Id);
         Assert.Equal("Rex", result.Nome);
-        Assert.Equal("Tutor", result.TutorNome);
+        Assert.Equal("Dono 1", result.DonoNome);
     }
 
     [Fact]
@@ -75,11 +75,11 @@ public class PetServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_WhenTutorDoesNotExist_ThrowsBusinessException()
+    public async Task CreateAsync_WhenDonoDoesNotExist_ThrowsBusinessException()
     {
         // Arrange
-        var dto = new PetRequestDto { Nome = "Rex", Especie = "Cachorro", Raca = "Labrador", TutorId = 99 };
-        _tutorRepositoryMock.Setup(t => t.GetByIdAsync(dto.TutorId)).ReturnsAsync((Tutor?)null);
+        var dto = new PetRequestDto { Nome = "Rex", Especie = "Cachorro", Raca = "Labrador", DonoId = 99, Peso = 10.5m };
+        _donoRepositoryMock.Setup(t => t.GetByIdAsync(dto.DonoId)).ReturnsAsync((Dono?)null);
 
         // Act & Assert
         await Assert.ThrowsAsync<BusinessException>(() => _service.CreateAsync(dto));
@@ -89,10 +89,10 @@ public class PetServiceTests
     public async Task CreateAsync_WhenSuccessful_ReturnsDetails()
     {
         // Arrange
-        var dto = new PetRequestDto { Nome = "Rex", Especie = "Cachorro", Raca = "Labrador", TutorId = 1 };
-        var tutor = new Tutor { Id = 1, Nome = "Tutor 1" };
+        var dto = new PetRequestDto { Nome = "Rex", Especie = "Cachorro", Raca = "Labrador", DonoId = 1, Peso = 10.5m };
+        var dono = new Dono { Id = 1, Nome = "Dono 1" };
         
-        _tutorRepositoryMock.Setup(t => t.GetByIdAsync(dto.TutorId)).ReturnsAsync(tutor);
+        _donoRepositoryMock.Setup(t => t.GetByIdAsync(dto.DonoId)).ReturnsAsync(dono);
         _repositoryMock.Setup(r => r.CreateAsync(It.IsAny<Pet>()))
             .ReturnsAsync((Pet p) => { p.Id = 5; return p; });
 
@@ -103,7 +103,7 @@ public class PetServiceTests
         Assert.NotNull(result);
         Assert.Equal(5, result.Id);
         Assert.Equal("Rex", result.Nome);
-        Assert.Equal("Tutor 1", result.TutorNome);
+        Assert.Equal("Dono 1", result.DonoNome);
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class PetServiceTests
     {
         // Arrange
         var id = 99;
-        var dto = new PetRequestDto { Nome = "Rex", TutorId = 1 };
+        var dto = new PetRequestDto { Nome = "Rex", DonoId = 1, Peso = 10.5m };
         _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((Pet?)null);
 
         // Act & Assert
@@ -119,15 +119,15 @@ public class PetServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_WhenTutorDoesNotExist_ThrowsBusinessException()
+    public async Task UpdateAsync_WhenDonoDoesNotExist_ThrowsBusinessException()
     {
         // Arrange
         var id = 1;
-        var pet = new Pet { Id = id, Nome = "Rex", TutorId = 1 };
-        var dto = new PetRequestDto { Nome = "Rex Novo", TutorId = 99 };
+        var pet = new Pet { Id = id, Nome = "Rex", DonoId = 1, Peso = 10.5m };
+        var dto = new PetRequestDto { Nome = "Rex Novo", DonoId = 99, Peso = 12.0m };
 
         _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(pet);
-        _tutorRepositoryMock.Setup(t => t.GetByIdAsync(dto.TutorId)).ReturnsAsync((Tutor?)null);
+        _donoRepositoryMock.Setup(t => t.GetByIdAsync(dto.DonoId)).ReturnsAsync((Dono?)null);
 
         // Act & Assert
         await Assert.ThrowsAsync<BusinessException>(() => _service.UpdateAsync(id, dto));
@@ -138,12 +138,12 @@ public class PetServiceTests
     {
         // Arrange
         var id = 1;
-        var pet = new Pet { Id = id, Nome = "Rex", TutorId = 1 };
-        var tutor = new Tutor { Id = 1, Nome = "Tutor 1" };
-        var dto = new PetRequestDto { Nome = "Rex Alterado", Especie = "Cachorro", Raca = "Golden", TutorId = 1 };
+        var pet = new Pet { Id = id, Nome = "Rex", DonoId = 1, Peso = 10.5m };
+        var dono = new Dono { Id = 1, Nome = "Dono 1" };
+        var dto = new PetRequestDto { Nome = "Rex Alterado", Especie = "Cachorro", Raca = "Golden", DonoId = 1, Peso = 11.5m };
 
         _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(pet);
-        _tutorRepositoryMock.Setup(t => t.GetByIdAsync(1)).ReturnsAsync(tutor);
+        _donoRepositoryMock.Setup(t => t.GetByIdAsync(1)).ReturnsAsync(dono);
         _repositoryMock.Setup(r => r.UpdateAsync(It.IsAny<Pet>())).ReturnsAsync((Pet p) => p);
 
         // Act

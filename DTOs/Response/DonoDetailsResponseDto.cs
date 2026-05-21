@@ -1,6 +1,6 @@
 namespace ClyvoVetApi.DTOs.Response;
 
-public class TutorDetailsResponseDto : TutorResponseDto
+public class DonoDetailsResponseDto : DonoResponseDto
 {
     public IEnumerable<PetDto> Pets { get; set; } = [];
 }

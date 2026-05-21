@@ -30,7 +30,7 @@ public class VacinaRepository(AppDbContext context) : IVacinaRepository
         await _context.Vacinas
             .Include(v => v.Pet)
             .AsNoTracking()
-            .Where(v => !v.Aplicada)
+            .Where(v => v.Status == "P")
             .ToListAsync();
 
     public async Task<IEnumerable<Vacina>> GetByNomeAsync(string nome) =>
@@ -44,7 +44,7 @@ public class VacinaRepository(AppDbContext context) : IVacinaRepository
         await _context.Vacinas
             .Include(v => v.Pet)
             .AsNoTracking()
-            .Where(v => v.ProximaDose <= limite && !v.Aplicada)
+            .Where(v => v.Data <= limite && v.Status == "P")
             .ToListAsync();
 
     public async Task<Vacina> CreateAsync(Vacina vacina)

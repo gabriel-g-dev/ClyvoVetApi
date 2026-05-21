@@ -7,10 +7,10 @@ using ClyvoVetApi.Services.Interfaces;
 
 namespace ClyvoVetApi.Services;
 
-public class PetService(IPetRepository repository, ITutorRepository tutorRepository) : IPetService
+public class PetService(IPetRepository repository, IDonoRepository donoRepository) : IPetService
 {
     private readonly IPetRepository _repository = repository;
-    private readonly ITutorRepository _tutorRepository = tutorRepository;
+    private readonly IDonoRepository _donoRepository = donoRepository;
 
     public async Task<PagedResponseDto<PetResponseDto>> GetAllAsync(int page, int pageSize)
     {
@@ -45,8 +45,8 @@ public class PetService(IPetRepository repository, ITutorRepository tutorReposit
 
     public async Task<PetDetailsResponseDto> CreateAsync(PetRequestDto dto)
     {
-        var tutor = await _tutorRepository.GetByIdAsync(dto.TutorId)
-            ?? throw new BusinessException($"Tutor associado com ID {dto.TutorId} não encontrado.");
+        var dono = await _donoRepository.GetByIdAsync(dto.DonoId)
+            ?? throw new BusinessException($"Dono associado com ID {dto.DonoId} não encontrado.");
 
         var pet = new Pet
         {
@@ -54,13 +54,14 @@ public class PetService(IPetRepository repository, ITutorRepository tutorReposit
             Especie = dto.Especie,
             Raca = dto.Raca,
             DataNascimento = dto.DataNascimento,
-            TutorId = dto.TutorId
+            Peso = dto.Peso,
+            DonoId = dto.DonoId
         };
 
         var created = await _repository.CreateAsync(pet);
         
-        // Atribuir o tutor para o mapeamento correto do DTO
-        created.Tutor = tutor;
+        // Atribuir o dono para o mapeamento correto do DTO
+        created.Dono = dono;
 
         return ToDetailsResponseDto(created);
     }
@@ -70,17 +71,18 @@ public class PetService(IPetRepository repository, ITutorRepository tutorReposit
         var pet = await _repository.GetByIdAsync(id)
             ?? throw new NotFoundException($"Pet com ID {id} não encontrado.");
 
-        var tutor = await _tutorRepository.GetByIdAsync(dto.TutorId)
-            ?? throw new BusinessException($"Tutor associado com ID {dto.TutorId} não encontrado.");
+        var dono = await _donoRepository.GetByIdAsync(dto.DonoId)
+            ?? throw new BusinessException($"Dono associado com ID {dto.DonoId} não encontrado.");
 
         pet.Nome = dto.Nome;
         pet.Especie = dto.Especie;
         pet.Raca = dto.Raca;
         pet.DataNascimento = dto.DataNascimento;
-        pet.TutorId = dto.TutorId;
+        pet.Peso = dto.Peso;
+        pet.DonoId = dto.DonoId;
 
         var updated = await _repository.UpdateAsync(pet);
-        updated.Tutor = tutor;
+        updated.Dono = dono;
 
         return ToDetailsResponseDto(updated);
     }
@@ -99,8 +101,9 @@ public class PetService(IPetRepository repository, ITutorRepository tutorReposit
         Especie = p.Especie,
         Raca = p.Raca,
         DataNascimento = p.DataNascimento,
-        TutorId = p.TutorId,
-        TutorNome = p.Tutor?.Nome ?? string.Empty
+        Peso = p.Peso,
+        DonoId = p.DonoId,
+        DonoNome = p.Dono?.Nome ?? string.Empty
     };
 
     private static PetDetailsResponseDto ToDetailsResponseDto(Pet p) => new()
@@ -110,33 +113,36 @@ public class PetService(IPetRepository repository, ITutorRepository tutorReposit
         Especie = p.Especie,
         Raca = p.Raca,
         DataNascimento = p.DataNascimento,
-        TutorId = p.TutorId,
-        TutorNome = p.Tutor?.Nome ?? string.Empty,
-        Tutor = p.Tutor != null ? new TutorResponseDto
+        Peso = p.Peso,
+        DonoId = p.DonoId,
+        DonoNome = p.Dono?.Nome ?? string.Empty,
+        Dono = p.Dono != null ? new DonoResponseDto
         {
-            Id = p.Tutor.Id,
-            Nome = p.Tutor.Nome,
-            Email = p.Tutor.Email,
-            Telefone = p.Tutor.Telefone,
-            TotalPets = p.Tutor.Pets?.Count ?? 0
+            Id = p.Dono.Id,
+            Nome = p.Dono.Nome,
+            Email = p.Dono.Email,
+            Telefone = p.Dono.Telefone,
+            TotalPets = p.Dono.Pets?.Count ?? 0
         } : null,
         Consultas = p.Consultas?.Select(c => new ConsultaResponseDto
         {
             Id = c.Id,
-            Data = c.Data,
+            Tipo = c.Tipo,
+            Valor = c.Valor,
             Descricao = c.Descricao,
-            Veterinario = c.Veterinario,
-            Observacoes = c.Observacoes,
+            Status = c.Status,
+            Data = c.Data,
             PetId = c.PetId,
-            PetNome = p.Nome
+            PetNome = p.Nome,
+            FuncionarioId = c.FuncionarioId,
+            FuncionarioNome = c.Funcionario?.Nome ?? string.Empty
         }) ?? [],
         Vacinas = p.Vacinas?.Select(v => new VacinaResponseDto
         {
             Id = v.Id,
             Nome = v.Nome,
-            DataAplicacao = v.DataAplicacao,
-            ProximaDose = v.ProximaDose,
-            Aplicada = v.Aplicada,
+            Data = v.Data,
+            Status = v.Status,
             PetId = v.PetId,
             PetNome = p.Nome
         }) ?? []

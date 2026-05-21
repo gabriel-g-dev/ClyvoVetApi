@@ -30,13 +30,19 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseOracle(builder.Configuration.GetConnectionString("OracleConnection")));
 
 // Registro de Repositórios
-builder.Services.AddScoped<ITutorRepository, TutorRepository>();
+builder.Services.AddScoped<IDonoRepository, DonoRepository>();
+builder.Services.AddScoped<IFuncionarioRepository, FuncionarioRepository>();
+builder.Services.AddScoped<IMedicamentoRepository, MedicamentoRepository>();
+builder.Services.AddScoped<IConsultaMedicamentoRepository, ConsultaMedicamentoRepository>();
 builder.Services.AddScoped<IPetRepository, PetRepository>();
 builder.Services.AddScoped<IConsultaRepository, ConsultaRepository>();
 builder.Services.AddScoped<IVacinaRepository, VacinaRepository>();
 
 // Registro de Serviços
-builder.Services.AddScoped<ITutorService, TutorService>();
+builder.Services.AddScoped<IDonoService, DonoService>();
+builder.Services.AddScoped<IFuncionarioService, FuncionarioService>();
+builder.Services.AddScoped<IMedicamentoService, MedicamentoService>();
+builder.Services.AddScoped<IConsultaMedicamentoService, ConsultaMedicamentoService>();
 builder.Services.AddScoped<IPetService, PetService>();
 builder.Services.AddScoped<IConsultaService, ConsultaService>();
 builder.Services.AddScoped<IVacinaService, VacinaService>();

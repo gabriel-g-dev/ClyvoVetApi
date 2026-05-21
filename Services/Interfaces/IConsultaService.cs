@@ -7,7 +7,7 @@ public interface IConsultaService
 {
     Task<PagedResponseDto<ConsultaResponseDto>> GetAllAsync(int page, int pageSize);
     Task<ConsultaResponseDto> GetByIdAsync(int id);
-    Task<IEnumerable<ConsultaResponseDto>> GetByVeterinarioAsync(string nome);
+    Task<IEnumerable<ConsultaResponseDto>> GetByFuncionarioIdAsync(int funcionarioId);
     Task<IEnumerable<ConsultaResponseDto>> GetByPeriodoAsync(DateTime inicio, DateTime fim);
     Task<ConsultaResponseDto> CreateAsync(ConsultaRequestDto dto);
     Task<ConsultaResponseDto> UpdateAsync(int id, ConsultaRequestDto dto);

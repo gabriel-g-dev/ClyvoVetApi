@@ -7,6 +7,7 @@ public class PetResponseDto
     public string Especie { get; set; } = string.Empty;
     public string Raca { get; set; } = string.Empty;
     public DateTime DataNascimento { get; set; }
-    public int TutorId { get; set; }
-    public string TutorNome { get; set; } = string.Empty;
+    public decimal Peso { get; set; }
+    public int DonoId { get; set; }
+    public string DonoNome { get; set; } = string.Empty;
 }

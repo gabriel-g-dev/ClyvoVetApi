@@ -14,6 +14,7 @@ public class ConsultaRepository(AppDbContext context) : IConsultaRepository
         var total = await _context.Consultas.CountAsync();
         var items = await _context.Consultas
             .Include(c => c.Pet)
+            .Include(c => c.Funcionario)
             .AsNoTracking()
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -24,18 +25,21 @@ public class ConsultaRepository(AppDbContext context) : IConsultaRepository
     public async Task<Consulta?> GetByIdAsync(int id) =>
         await _context.Consultas
             .Include(c => c.Pet)
+            .Include(c => c.Funcionario)
             .FirstOrDefaultAsync(c => c.Id == id);
 
-    public async Task<IEnumerable<Consulta>> GetByVeterinarioAsync(string nome) =>
+    public async Task<IEnumerable<Consulta>> GetByFuncionarioIdAsync(int funcionarioId) =>
         await _context.Consultas
             .Include(c => c.Pet)
+            .Include(c => c.Funcionario)
             .AsNoTracking()
-            .Where(c => c.Veterinario.ToLower().Contains(nome.ToLower()))
+            .Where(c => c.FuncionarioId == funcionarioId)
             .ToListAsync();
 
     public async Task<IEnumerable<Consulta>> GetByPeriodoAsync(DateTime inicio, DateTime fim) =>
         await _context.Consultas
             .Include(c => c.Pet)
+            .Include(c => c.Funcionario)
             .AsNoTracking()
             .Where(c => c.Data >= inicio && c.Data <= fim)
             .ToListAsync();
