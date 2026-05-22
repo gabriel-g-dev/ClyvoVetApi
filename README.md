@@ -1,6 +1,6 @@
 # 🐾 ClyvoVet API — Infraestrutura de Medicina Veterinária Digital
 
-API RESTful empresarial de alto desempenho desenvolvida em **ASP.NET Core (.NET 9)** para a gestão da jornada contínua e preventiva de saúde de pets. Desenvolvido para o **FIAP Challenge 2026** em parceria com a **Clyvo VET**.
+API RESTful empresarial de alto desempenho desenvolvida em **ASP.NET Core (.NET 10)** para a gestão da jornada contínua e preventiva de saúde de pets. Desenvolvido para o **FIAP Challenge 2026** em parceria com a **Clyvo VET**.
 
 ---
 
@@ -31,7 +31,7 @@ graph TD
     Client[Cliente HTTP / Swagger UI] -->|1. Requisição JSON / DTO| Controller[Controllers Layer]
     Controller -->|2. Encaminha DTO| Service[Services Layer - Business Logic]
     Service -->|3. Validações e Regras| Repositories[Repositories Layer - Data Access]
-    Repositories -->|4. Consulta LINQ| EF[Entity Framework Core 9]
+    Repositories -->|4. Consulta LINQ| EF[Entity Framework Core 9/10]
     EF -->|5. SQL Dinâmico| DB[(Oracle Database XE)]
     
     %% Interceptação de Erros
@@ -52,7 +52,7 @@ graph TD
 
 > **Base URL (local):** `http://localhost:5109`  
 > **Base URL (Docker):** `http://localhost:8080`  
-> **Swagger UI:** `/swagger`
+> **Scalar API Reference (UI):** `/scalar/v1`
 
 ---
 
@@ -239,7 +239,7 @@ graph TD
 ## ⚙️ Como Executar Localmente
 
 ### Pré-requisitos
-* [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0) instalado.
+* [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) instalado.
 * Acesso ao banco de dados Oracle da FIAP (ou utilização do Docker-compose para subir banco local).
 * [Docker Desktop](https://www.docker.com/products/docker-desktop/) (caso queira rodar via contêineres).
 
@@ -277,7 +277,7 @@ dotnet ef database update
 dotnet run
 ```
 A API iniciará localmente e estará acessível em: [http://localhost:5109](http://localhost:5109). 
-O Swagger com a documentação interativa e comentários XML estará em: [http://localhost:5109/swagger](http://localhost:5109/swagger).
+A nova documentação interativa (Scalar API Reference) estará em: [http://localhost:5109/scalar/v1](http://localhost:5109/scalar/v1).
 
 **6. Execute os Testes Unitários:**
 O projeto conta com uma suíte de **51 testes unitários automatizados** implementada em **xUnit** e **Moq**, cobrindo 100% dos fluxos e regras de negócio da camada de serviços (`Services`) e o motor de Inteligência Preventiva. Para rodá-los:
@@ -301,7 +301,7 @@ Isso criará e iniciará dois serviços em background:
 * **`api`:** A API ClyvoVet compilada sob contêiner Linux escutando na porta `8080`.
 
 **2. Acesse a aplicação:**
-* Swagger UI: [http://localhost:8080/swagger](http://localhost:8080/swagger)
+* Scalar UI: [http://localhost:8080/scalar/v1](http://localhost:8080/scalar/v1)
 * Endpoints API: [http://localhost:8080/api/tutores](http://localhost:8080/api/tutores)
 
 ---
@@ -374,7 +374,7 @@ az vm run-command invoke \
 PUBLIC_IP=$(az network public-ip show --resource-group $RESOURCE_GROUP --name ${VM_NAME}PublicIP --query "ipAddress" --output tsv)
 
 echo "🚀 Deployment efetuado com sucesso na nuvem!"
-echo "🔗 Acesse o Swagger da API na nuvem em: http://$PUBLIC_IP:$PORT_API/swagger"
+echo "🔗 Acesse a Documentação Interativa (Scalar) da API na nuvem em: http://$PUBLIC_IP:$PORT_API/scalar/v1"
 ```
 
 ### Script de Descarte e Limpeza (Obrigatório para Evitar Custos)
