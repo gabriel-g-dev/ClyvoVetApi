@@ -276,8 +276,7 @@ dotnet ef database update
 ```bash
 dotnet run
 ```
-A API iniciará localmente e estará acessível em: [http://localhost:5109](http://localhost:5109). 
-A nova documentação interativa (Scalar API Reference) estará em: [http://localhost:5109/scalar/v1](http://localhost:5109/scalar/v1).
+A API iniciará localmente. A nova documentação interativa (Scalar API Reference) estará disponível em: [http://localhost:5109/scalar/v1](http://localhost:5109/scalar/v1).
 
 **6. Execute os Testes Unitários:**
 O projeto conta com uma suíte de **51 testes unitários automatizados** implementada em **xUnit** e **Moq**, cobrindo 100% dos fluxos e regras de negócio da camada de serviços (`Services`) e o motor de Inteligência Preventiva. Para rodá-los:
