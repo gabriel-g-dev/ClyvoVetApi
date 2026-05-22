@@ -6,24 +6,24 @@ using ClyvoVetApi.Services;
 using ClyvoVetApi.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddOpenApi(options =>
 {
-    c.SwaggerDoc("v1", new()
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
     {
-        Title       = "ClyvoVet API",
-        Version     = "v1",
-        Description = "API para gestão da jornada contínua de saúde do pet - FIAP Challenge 2026"
+        document.Info = new()
+        {
+            Title = "ClyvoVet API",
+            Version = "v1",
+            Description = "API para gestão da jornada contínua de saúde do pet - FIAP Challenge 2026"
+        };
+        return Task.CompletedTask;
     });
-
-    // Manter suporte a comentários XML no Swagger para a documentação dos endpoints
-    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-    c.IncludeXmlComments(xmlPath);
 });
 
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -59,8 +59,8 @@ var app = builder.Build();
 // Ativa o middleware de interceptação global de exceções
 app.UseExceptionHandler();
 
-app.UseSwagger();
-app.UseSwaggerUI();
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.UseHttpsRedirection();
 app.UseAuthorization();
