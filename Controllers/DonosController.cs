@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace ClyvoVetApi.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/tutores")]
 [Produces("application/json")]
 public class DonosController(IDonoService service) : ControllerBase
 {

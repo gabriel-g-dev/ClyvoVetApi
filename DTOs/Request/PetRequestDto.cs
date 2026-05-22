@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 
+using System.Text.Json.Serialization;
+
 namespace ClyvoVetApi.DTOs.Request;
 
 public class PetRequestDto
@@ -24,5 +26,6 @@ public class PetRequestDto
     public decimal Peso { get; set; }
 
     [Required(ErrorMessage = "ID do dono é obrigatório.")]
+    [JsonPropertyName("tutorId")]
     public int DonoId { get; set; }
 }
