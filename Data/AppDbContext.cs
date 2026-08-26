@@ -19,12 +19,11 @@ public class AppDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // 1. DONOS
         modelBuilder.Entity<Dono>(entity =>
         {
             entity.ToTable("DONOS");
             entity.HasKey(e => e.Id).HasName("DONOS_PK");
-            
+
             entity.Property(e => e.Id).HasColumnName("dono_id").ValueGeneratedOnAdd();
             entity.Property(e => e.Nome).HasColumnName("dono_nome").HasMaxLength(50).IsRequired();
             entity.Property(e => e.Telefone).HasColumnName("dono_telefone").HasMaxLength(20).IsRequired();
@@ -33,7 +32,6 @@ public class AppDbContext : DbContext
             entity.HasIndex(e => e.Email).IsUnique().HasDatabaseName("UQ_DONO_EMAIL");
         });
 
-        // 2. FUNCIONARIOS
         modelBuilder.Entity<Funcionario>(entity =>
         {
             entity.ToTable("FUNCIONARIOS");
@@ -49,7 +47,6 @@ public class AppDbContext : DbContext
             entity.HasIndex(e => e.Email).IsUnique().HasDatabaseName("UQ_FUNC_EMAIL");
         });
 
-        // 3. PETS
         modelBuilder.Entity<Pet>(entity =>
         {
             entity.ToTable("PETS");
@@ -70,7 +67,6 @@ public class AppDbContext : DbContext
                 .HasConstraintName("PETS_DONOS_FK");
         });
 
-        // 4. CONSULTAS
         modelBuilder.Entity<Consulta>(entity =>
         {
             entity.ToTable("CONSULTAS");
@@ -97,11 +93,9 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("CONSULTAS_FUNCIONARIOS_FK");
 
-            // Check Constraint for Status (A, C, R)
             entity.ToTable(t => t.HasCheckConstraint("CK_CONSULTA_STATUS", "consulta_status IN ('A', 'C', 'R')"));
         });
 
-        // 5. MEDICAMENTOS
         modelBuilder.Entity<Medicamento>(entity =>
         {
             entity.ToTable("MEDICAMENTOS");
@@ -111,7 +105,6 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Nome).HasColumnName("medicamento_nome").HasMaxLength(100).IsRequired();
         });
 
-        // 6. CONSULTAS_MEDICAMENTOS
         modelBuilder.Entity<ConsultaMedicamento>(entity =>
         {
             entity.ToTable("CONSULTAS_MEDICAMENTOS");
@@ -135,7 +128,6 @@ public class AppDbContext : DbContext
                 .HasConstraintName("CM_MEDICAMENTOS_FK");
         });
 
-        // 7. VACINAS
         modelBuilder.Entity<Vacina>(entity =>
         {
             entity.ToTable("VACINAS");
@@ -153,7 +145,6 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("VACINAS_PETS_FK");
 
-            // Check Constraint for Status (P, A)
             entity.ToTable(t => t.HasCheckConstraint("CK_VACINA_STATUS", "vacina_status IN ('P', 'A')"));
         });
     }

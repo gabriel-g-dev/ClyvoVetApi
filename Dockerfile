@@ -19,7 +19,13 @@ COPY --from=build /app/publish .
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
+# O sink de arquivo do Serilog escreve em /app/logs. Como a aplicacao roda sem
+# privilegios e o conteudo copiado acima pertence a root, o diretorio precisa
+# existir e pertencer ao usuario app - senao o log em arquivo e perdido.
+RUN mkdir -p /app/logs && chown -R app:app /app/logs
+
 # Enforce secure non-root user execution (DevOps Compliance)
+# A imagem aspnet:9.0 ja traz o usuario 'app' (UID 1654), sem privilegios.
 USER app
 
 ENTRYPOINT ["dotnet", "ClyvoVetApi.dll"]

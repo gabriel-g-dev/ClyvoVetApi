@@ -85,7 +85,7 @@ public class DonoService(IDonoRepository repository) : IDonoService
     {
         var dono = await _repository.GetByIdAsync(donoId)
             ?? throw new NotFoundException($"Dono com ID {donoId} não encontrado.");
-        
+
         return dono.Pets?.Select(p => new PetDto
         {
             Id             = p.Id,

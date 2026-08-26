@@ -1,386 +1,265 @@
-# 🐾 ClyvoVet API — Infraestrutura de Medicina Veterinária Digital
+# ClyvoVet API
 
-API RESTful empresarial de alto desempenho desenvolvida em **ASP.NET Core (.NET 10)** para a gestão da jornada contínua e preventiva de saúde de pets. Desenvolvido para o **FIAP Challenge 2026** em parceria com a **Clyvo VET**.
+API REST em ASP.NET Core (.NET 9) para gestão de histórico clínico veterinário.
+FIAP Challenge 2026 — Clyvo VET.
 
----
-
-## 👥 Integrantes
-* **Gabriel Garcia** — RM 563298
-* **Andre Bellandi** — RM 564662
-* **Vitor Augusto** — RM 564227
-
----
-
-## 📋 Descrição do Negócio e do Desafio
-A **ClyvoVet API** soluciona o problema da fragmentação e do cuidado meramente reativo na jornada de saúde animal. Tradicionalmente, os tutores só procuram auxílio em situações emergenciais agudas. 
-
-Nossa plataforma atua como o **sistema operacional do cuidado contínuo**, unindo inteligência e dados longitudinais estruturados para clínicas parceiras e tutores. A arquitetura divide-se nos quatro grandes pilares do Challenge:
-1. **Preventivo:** Vacinas e check-ups preventivos sob rígido controle.
-2. **Terapêutico:** Agendamento e monitoramento de consultas clínicas.
-3. **Bem-estar:** Histórico longitudinal de qualidade de vida do pet.
-4. **Inteligência de Dados:** Integração limpa e barramento de dados preparado para automações (ex: alertas de vacinação via WhatsApp).
+| Integrante | RM |
+|---|---|
+| Gabriel Garcia | 563298 |
+| Andre Bellandi | 564662 |
+| Vitor Augusto | 564227 |
 
 ---
 
-## 🏗️ Desenho de Arquitetura da Solução
+## Descrição da solução
 
-O projeto adota os princípios da **Clean Architecture (Arquitetura Limpa)** e de baixo acoplamento (*Separation of Concerns*). Abaixo, o diagrama detalhado que demonstra o fluxo de controle e processamento de uma requisição na API:
+Centraliza o histórico de saúde de pets em um único backend: tutores, animais, funcionários, consultas, vacinas e medicamentos prescritos. Sete entidades relacionais em Oracle, acessadas por Entity Framework Core com mapeamento Fluent API.
 
-```mermaid
-graph TD
-    Client[Cliente HTTP / Swagger UI] -->|1. Requisição JSON / DTO| Controller[Controllers Layer]
-    Controller -->|2. Encaminha DTO| Service[Services Layer - Business Logic]
-    Service -->|3. Validações e Regras| Repositories[Repositories Layer - Data Access]
-    Repositories -->|4. Consulta LINQ| EF[Entity Framework Core 9/10]
-    EF -->|5. SQL Dinâmico| DB[(Oracle Database XE)]
-    
-    %% Interceptação de Erros
-    ErrorInterceptor[GlobalExceptionHandler - IExceptionHandler] -.->|Intercepta Erros Assincronamente| Service
-    ErrorInterceptor -.->|Retorna RFC 7807 ProblemDetails| Client
+Além do CRUD, a API expõe:
+
+- histórico longitudinal por pet — consultas e vacinas em uma única requisição;
+- score de saúde preventiva (0–100) calculado a partir do histórico do animal, com recomendações derivadas;
+- serviço em segundo plano (`AlertScheduler`) que varre vacinas vencidas e próximas do vencimento.
+
+Arquitetura em camadas: Controllers → Services → Repositories → EF Core → Oracle. Services dependem de interfaces de repositório, o que permite testá-los sem banco. Exceções de domínio (`NotFoundException`, `BusinessException`) são traduzidas em RFC 7807 ProblemDetails por um `IExceptionHandler` global.
+
+A solution contém três projetos:
+
+```
+ClyvoVetApi                      API
+ClyvoVetApi.Tests.Unit           127 testes — xUnit + Moq
+ClyvoVetApi.Tests.Integration     36 testes — WebApplicationFactory + SQLite in-memory
 ```
 
-### Detalhes das Camadas:
-* **DTOs (Data Transfer Objects):** Classes dedicadas à transferência segura de dados nas fronteiras da API, com anotações de validação de modelo (`System.ComponentModel.DataAnnotations`) prevenindo estouro de limites ou formatos inválidos de dados (ex: e-mails incorretos).
-* **Camada de Serviço (Service Layer):** Contém todas as regras de negócio da aplicação (ex: validação preventiva de e-mails duplicados, lógica de datas e períodos de consultas). Totalmente desacoplada do Entity Framework.
-* **Camada de Repositório (Repository Layer):** Isola e encapsula o acesso direto ao contexto do EF Core (`AppDbContext`). Utiliza `.AsNoTracking()` em todas as leituras puras para otimização extrema de memória e tempo de processamento.
-* **Global Error Handler (IExceptionHandler):** Middleware assíncrono moderno que intercepta erros globalmente na aplicação e padroniza as respostas de exceções no formato padrão de mercado **RFC 7807 (ProblemDetails)**, mapeando exceções semânticas de domínio diretamente para seus códigos HTTP adequados (`400 BadRequest`, `404 NotFound`, `500 InternalServerError`).
-* **C# 12/13 Primary Constructors:** Todas as injeções de dependência de repositórios, serviços e controladores utilizam a sintaxe de construtores primários modernos, reduzindo código boilerplate e aumentando a legibilidade.
+### Stack
+
+| Componente | Versão |
+|---|---|
+| .NET / ASP.NET Core | 9.0 (`net9.0`) |
+| Entity Framework Core | 9.0.4 |
+| Oracle.EntityFrameworkCore | 9.23.60 |
+| Serilog.AspNetCore | 9.0.0 |
+| OpenTelemetry | 1.17.0 |
+| Microsoft.AspNetCore.Authentication.JwtBearer | 9.0.0 |
+| Scalar.AspNetCore | 2.14.14 |
+| xUnit / Moq | 2.9.3 / 4.20.72 |
+| Microsoft.AspNetCore.Mvc.Testing | 9.0.0 |
+
+Requer .NET 9 instalado (SDK 9.0.x ou ASP.NET Core Runtime 9.0.x). O projeto tem como alvo `net9.0`: apenas com .NET 8 ou .NET 10 o `dotnet build` funciona, mas `dotnet run` e `dotnet test` falham.
 
 ---
 
-## 🔗 Rotas da API e Documentação
+## Benefícios para o negócio
 
-> **Base URL (local):** `http://localhost:5109`  
-> **Base URL (Docker):** `http://localhost:8080`  
-> **Scalar API Reference (UI):** `/scalar/v1`
+**Atendimento preventivo em vez de reativo.** O score de saúde e a varredura de vacinas pendentes permitem que a clínica identifique animais em risco antes da queixa clínica, transformando consulta de emergência em acompanhamento programado.
+
+**Histórico unificado.** Cada atendimento passa a compor um prontuário contínuo. O veterinário recebe consultas anteriores, vacinas aplicadas e medicações prescritas em uma requisição, sem depender da memória do tutor.
+
+**Redução de faltas e de vacinas vencidas.** A rotina de alertas identifica vencimentos, viabilizando contato ativo com o tutor — receita recorrente que hoje se perde por esquecimento.
+
+**Base para integração.** Sendo REST com contrato OpenAPI, o mesmo backend atende aplicativo do tutor, sistema da clínica e futuros parceiros sem reescrita.
+
+**Operação observável.** Health checks, log estruturado com correlação e métricas de latência e erro permitem detectar degradação antes que o usuário reclame, requisito para operar em nuvem com SLA.
 
 ---
 
-### 👤 Donos (Tutores) — `/api/tutores`
-> Tabela Oracle: `DONOS`
+## Banco de dados
 
-| Método | Rota | Descrição | Status HTTP |
-|--------|------|-----------|-------------|
-| `GET` | `/api/tutores?page=1&pageSize=10` | Lista todos os donos com paginação | `200 OK` |
-| `GET` | `/api/tutores/{id}` | Busca dono por ID com lista de pets | `200 OK`, `404` |
-| `GET` | `/api/tutores/email/{email}` | Busca dono por e-mail | `200 OK`, `404` |
-| `GET` | `/api/tutores/{id}/pets` | Lista os pets do dono | `200 OK`, `404` |
-| `POST` | `/api/tutores` | Cadastra novo dono | `201 Created`, `400` |
-| `PUT` | `/api/tutores/{id}` | Atualiza dados do dono | `200 OK`, `400`, `404` |
-| `DELETE` | `/api/tutores/{id}` | Remove dono | `204 NoContent`, `404` |
+Oracle. Tabelas: `DONOS`, `FUNCIONARIOS`, `PETS`, `CONSULTAS`, `MEDICAMENTOS`, `CONSULTAS_MEDICAMENTOS`, `VACINAS`. Mapeamento em `Data/AppDbContext.cs`.
 
-**Body POST/PUT:**
-```json
-{ "nome": "João Silva", "email": "joao@email.com", "telefone": "11999999999" }
+O DDL completo está em **`script_bd.sql`** na raiz — chaves primárias, seis chaves estrangeiras com `ON DELETE CASCADE`, check constraints de status e índices únicos de e-mail. Gerado a partir do modelo do EF Core:
+
+```bash
+dotnet ef dbcontext script --project ClyvoVetApi.csproj -o script_bd.sql
 ```
 
----
+`dbcontext script` lê o `AppDbContext` e não abre conexão. `Data/AppDbContextFactory.cs` implementa `IDesignTimeDbContextFactory`, permitindo rodar o comando sem credencial configurada.
 
-### 🐾 Pets — `/api/pets`
-> Tabela Oracle: `PETS`
+Executar o script:
 
-| Método | Rota | Descrição | Status HTTP |
-|--------|------|-----------|-------------|
-| `GET` | `/api/pets?page=1&pageSize=10` | Lista todos os pets com paginação | `200 OK` |
-| `GET` | `/api/pets/{id}` | Detalha pet com tutor, vacinas e consultas | `200 OK`, `404` |
-| `GET` | `/api/pets/especie/{especie}` | Filtra pets por espécie | `200 OK` |
-| `GET` | `/api/pets/raca/{raca}` | Filtra pets por raça | `200 OK` |
-| `GET` | `/api/pets/{id}/vacinas` | Histórico de vacinas do pet | `200 OK`, `404` |
-| `GET` | `/api/pets/{id}/consultas` | Histórico de consultas do pet | `200 OK`, `404` |
-| `GET` | `/api/pets/{id}/inteligencia-preventiva` | Score de saúde preventiva (0–100) e alertas dinâmicos | `200 OK`, `404` |
-| `POST` | `/api/pets` | Cadastra novo pet | `201 Created`, `400` |
-| `PUT` | `/api/pets/{id}` | Atualiza dados do pet | `200 OK`, `400`, `404` |
-| `DELETE` | `/api/pets/{id}` | Remove pet | `204 NoContent`, `404` |
-
-**Body POST/PUT:**
-```json
-{
-  "nome": "Rex", "especie": "Cachorro", "raca": "Labrador",
-  "dataNascimento": "2020-01-15", "peso": 25.50, "tutorId": 1
-}
+```bash
+sqlplus usuario/senha@host:1521/servico @script_bd.sql
 ```
 
----
-
-### 🩺 Consultas — `/api/consultas`
-> Tabela Oracle: `CONSULTAS` — Status: `A` = Agendada | `C` = Cancelada | `R` = Realizada
-
-| Método | Rota | Descrição | Status HTTP |
-|--------|------|-----------|-------------|
-| `GET` | `/api/consultas?page=1&pageSize=10` | Lista todas as consultas com paginação | `200 OK` |
-| `GET` | `/api/consultas/{id}` | Busca consulta por ID | `200 OK`, `404` |
-| `GET` | `/api/consultas/status/{status}` | Filtra por status: `A`, `C` ou `R` | `200 OK` |
-| `GET` | `/api/consultas/periodo?inicio=&fim=` | Filtra por intervalo de datas | `200 OK`, `400` |
-| `POST` | `/api/consultas` | Registra nova consulta | `201 Created`, `400` |
-| `PUT` | `/api/consultas/{id}` | Atualiza consulta | `200 OK`, `400`, `404` |
-| `DELETE` | `/api/consultas/{id}` | Remove consulta | `204 NoContent`, `404` |
-
-**Body POST/PUT:**
-```json
-{
-  "data": "2026-06-10T14:00:00", "tipo": "Consulta de Rotina",
-  "descricao": "Checkup anual completo", "valor": 150.00,
-  "status": "A", "petId": 1, "funcionarioId": 1
-}
-```
+Não execute comandos de migration neste projeto. Os arquivos em `Migrations/` descrevem uma modelagem anterior (`TUTORES`, `CLINICAS`, `VETERINARIOS`) e não correspondem ao `AppDbContext` atual.
 
 ---
 
-### 💉 Vacinas — `/api/vacinas`
-> Tabela Oracle: `VACINAS` — Status: `P` = Pendente | `A` = Aplicada
+## Variáveis de ambiente
 
-| Método | Rota | Descrição | Status HTTP |
-|--------|------|-----------|-------------|
-| `GET` | `/api/vacinas?page=1&pageSize=10` | Lista todas as vacinas com paginação | `200 OK` |
-| `GET` | `/api/vacinas/{id}` | Busca vacina por ID | `200 OK`, `404` |
-| `GET` | `/api/vacinas/pendentes` | Lista vacinas com status `P` | `200 OK` |
-| `GET` | `/api/vacinas/nome/{nome}` | Filtra vacinas por nome | `200 OK` |
-| `POST` | `/api/vacinas` | Registra nova vacina | `201 Created`, `400` |
-| `PUT` | `/api/vacinas/{id}` | Atualiza vacina | `200 OK`, `400`, `404` |
-| `DELETE` | `/api/vacinas/{id}` | Remove vacina | `204 NoContent`, `404` |
+Nenhum segredo é versionado. O `appsettings.json` não contém connection string nem chaves de autenticação.
 
-**Body POST/PUT:**
-```json
-{ "nome": "Antirrábica", "dataAplicacao": "2026-06-01", "status": "A", "petId": 1 }
-```
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `ConnectionStrings__OracleConnection` | Sim | Conexão com o Oracle. Sem ela a aplicação não inicia. |
+| `Auth__Username` | Sim | Usuário aceito no login. |
+| `Auth__Password` | Sim | Senha correspondente. |
+| `Auth__SigningKey` | Sim | Chave de assinatura do JWT, mínimo 32 caracteres. |
+| `Auth__Issuer` | Não | Emissor do token. Padrão `ClyvoVetApi`. |
+| `Auth__Audience` | Não | Audiência do token. Padrão `ClyvoVetApiClients`. |
+| `Auth__ExpirationMinutes` | Não | Validade do token. Padrão 60. |
+| `OpenTelemetry__OtlpEndpoint` | Não | Destino OTLP. Vazio desabilita a exportação. |
+| `OpenTelemetry__ConsoleExporter` | Não | `true` imprime traces e métricas no console. |
+| `ASPNETCORE_ENVIRONMENT` | Não | `Development`, `Production` ou `Testing`. |
 
----
+Comportamento quando ausentes:
 
-### 👷 Funcionários — `/api/funcionarios`
-> Tabela Oracle: `FUNCIONARIOS`
+- `ConnectionStrings__OracleConnection` — a inicialização falha com `InvalidOperationException` nomeando a variável, em vez de quebrar na primeira requisição ao banco. O ambiente `Testing` fica fora dessa checagem, porque os testes de integração substituem o provider por SQLite.
+- `Auth__Username` / `Auth__Password` — o login sempre responde 401.
+- `Auth__SigningKey` — uma chave aleatória é gerada na inicialização, com Warning no log. A API sobe, mas os tokens deixam de valer após restart.
 
-| Método | Rota | Descrição | Status HTTP |
-|--------|------|-----------|-------------|
-| `GET` | `/api/funcionarios` | Lista todos os funcionários | `200 OK` |
-| `GET` | `/api/funcionarios/{id}` | Busca funcionário por ID | `200 OK`, `404` |
-| `GET` | `/api/funcionarios/setor/{setor}` | Filtra por setor | `200 OK` |
-| `POST` | `/api/funcionarios` | Cadastra novo funcionário | `201 Created`, `400` |
-| `PUT` | `/api/funcionarios/{id}` | Atualiza funcionário | `200 OK`, `404` |
-| `DELETE` | `/api/funcionarios/{id}` | Remove funcionário | `204 NoContent`, `404` |
-
-**Body POST/PUT:**
-```json
-{
-  "nome": "Dra. Ana Souza", "setor": "Clínica Geral",
-  "cargo": "Veterinária", "email": "ana@clyvovet.com", "telefone": "11988888888"
-}
-```
+`.env.example` lista as mesmas variáveis. Copie para `.env` (ignorado pelo Git) ao usar Docker Compose.
 
 ---
 
-### 💊 Medicamentos — `/api/medicamentos`
-> Tabela Oracle: `MEDICAMENTOS`
+## Como executar
 
-| Método | Rota | Descrição | Status HTTP |
-|--------|------|-----------|-------------|
-| `GET` | `/api/medicamentos` | Lista todos os medicamentos | `200 OK` |
-| `GET` | `/api/medicamentos/{id}` | Busca medicamento por ID | `200 OK`, `404` |
-| `POST` | `/api/medicamentos` | Cadastra novo medicamento | `201 Created`, `400` |
-| `PUT` | `/api/medicamentos/{id}` | Atualiza medicamento | `200 OK`, `404` |
-| `DELETE` | `/api/medicamentos/{id}` | Remove medicamento | `204 NoContent`, `404` |
+### CLI
 
-**Body POST/PUT:**
-```json
-{ "nome": "Amoxicilina" }
-```
-
----
-
-
-| Método | Rota | Descrição | Status de Resposta (HTTP) |
-|--------|------|-----------|---------------------------|
-| **GET** | `/api/tutores` | Lista todos os tutores com paginação. | `200 OK` (PagedResponse) |
-| **GET** | `/api/tutores/{id}` | Busca os detalhes completos de um tutor e sua lista de pets. | `200 OK`, `404 Not Found` |
-| **GET** | `/api/tutores/email/{email}` | Busca detalhes completos do tutor pelo endereço de e-mail. | `200 OK`, `404 Not Found` |
-| **GET** | `/api/tutores/{id}/pets` | Lista todos os pets pertencentes a um tutor específico. | `200 OK`, `404 Not Found` |
-| **POST** | `/api/tutores` | Cadastra um novo tutor. Valida unicidade de e-mail e formato. | `201 Created`, `400 Bad Request` |
-| **PUT** | `/api/tutores/{id}` | Atualiza dados cadastrais de um tutor. | `200 OK`, `400 Bad Request`, `404 Not Found` |
-| **DELETE** | `/api/tutores/{id}` | Remove um tutor e seus respectivos dados do sistema. | `204 NoContent`, `404 Not Found` |
-
-### Pets (`/api/pets`)
-| Método | Rota | Descrição | Status de Resposta (HTTP) |
-|--------|------|-----------|---------------------------|
-| **GET** | `/api/pets` | Lista todos os pets cadastrados com paginação. | `200 OK` (PagedResponse) |
-| **GET** | `/api/pets/{id}` | Retorna detalhes do pet, dados do tutor e histórico completo de vacinas/consultas. | `200 OK`, `404 Not Found` |
-| **GET** | `/api/pets/especie/{especie}` | Lista pets pertencentes à espécie especificada. | `200 OK` |
-| **GET** | `/api/pets/raca/{raca}` | Lista pets pertencentes à raça especificada. | `200 OK` |
-| **GET** | `/api/pets/{id}/vacinas` | Retorna o calendário e histórico vacinal detalhado do pet. | `200 OK`, `404 Not Found` |
-| **GET** | `/api/pets/{id}/consultas` | Retorna o histórico de consultas e agendamentos do pet. | `200 OK`, `404 Not Found` |
-| **GET** | `/api/pets/{id}/inteligencia-preventiva` | Retorna a análise preditiva, score de saúde preventiva (0 a 100) e alertas dinâmicos do pet (Intelligence Engine). | `200 OK`, `404 Not Found` |
-| **POST** | `/api/pets` | Cadastra um novo pet associando a um tutor válido. | `201 Created`, `400 Bad Request` |
-| **PUT** | `/api/pets/{id}` | Atualiza informações detalhadas de um pet. | `200 OK`, `400 Bad Request`, `404 Not Found` |
-| **DELETE** | `/api/pets/{id}` | Remove o registro de um pet. | `204 NoContent`, `404 Not Found` |
-
-### Consultas (`/api/consultas`)
-| Método | Rota | Descrição | Status de Resposta (HTTP) |
-|--------|------|-----------|---------------------------|
-| **GET** | `/api/consultas` | Lista todas as consultas cadastradas com paginação. | `200 OK` (PagedResponse) |
-| **GET** | `/api/consultas/{id}` | Busca uma consulta individual por ID. | `200 OK`, `404 Not Found` |
-| **GET** | `/api/consultas/veterinario/{nome}` | Busca consultas associadas a um veterinário por aproximação de nome. | `200 OK` |
-| **GET** | `/api/consultas/periodo` | Busca consultas dentro de um intervalo de datas (Query `inicio` e `fim`). | `200 OK`, `400 Bad Request` |
-| **POST** | `/api/consultas` | Registra uma nova consulta clínica para um pet válido. | `201 Created`, `400 Bad Request` |
-| **PUT** | `/api/consultas/{id}` | Atualiza informações de uma consulta agendada. | `200 OK`, `400 Bad Request`, `404 Not Found` |
-| **DELETE** | `/api/consultas/{id}` | Exclui o registro de uma consulta. | `204 NoContent`, `404 Not Found` |
-
-### Vacinas (`/api/vacinas`)
-| Método | Rota | Descrição | Status de Resposta (HTTP) |
-|--------|------|-----------|---------------------------|
-| **GET** | `/api/vacinas` | Lista todas as vacinas aplicadas ou agendadas com paginação. | `200 OK` (PagedResponse) |
-| **GET** | `/api/vacinas/{id}` | Detalha uma vacina específica por ID. | `200 OK`, `404 Not Found` |
-| **GET** | `/api/vacinas/pendentes` | Lista todas as vacinas pendentes de aplicação no sistema. | `200 OK` |
-| **GET** | `/api/vacinas/nome/{nome}` | Busca vacinas pelo nome comercial ou tipo de imunizante. | `200 OK` |
-| **GET** | `/api/vacinas/proximas` | Lista vacinas agendadas para os próximos dias (Query `dias`, padrão 30). | `200 OK`, `400 Bad Request` |
-| **POST** | `/api/vacinas` | Registra uma nova aplicação ou agendamento de vacina para um pet. | `201 Created`, `400 Bad Request` |
-| **PUT** | `/api/vacinas/{id}` | Atualiza registros ou status de uma vacina. | `200 OK`, `400 Bad Request`, `404 Not Found` |
-| **DELETE** | `/api/vacinas/{id}` | Exclui um registro de vacinação. | `204 NoContent`, `404 Not Found` |
-
----
-
-## ⚙️ Como Executar Localmente
-
-### Pré-requisitos
-* [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) instalado.
-* Acesso ao banco de dados Oracle da FIAP (ou utilização do Docker-compose para subir banco local).
-* [Docker Desktop](https://www.docker.com/products/docker-desktop/) (caso queira rodar via contêineres).
-
----
-
-### Execução via .NET CLI
-
-**1. Clone o repositório:**
 ```bash
 git clone https://github.com/gabriel-g-dev/ClyvoVetApi.git
-cd ClyvoVetApi/ClyvoVetApi
+cd ClyvoVetApi
+
+dotnet restore
+dotnet build
+
+export ConnectionStrings__OracleConnection="User Id=RM;Password=SENHA;Data Source=oracle.fiap.com.br:1521/ORCL"
+export Auth__Username="clyvovet"
+export Auth__Password="SENHA_DA_API"
+export Auth__SigningKey="CHAVE_COM_PELO_MENOS_32_CARACTERES"
+
+dotnet run
 ```
 
-**2. Configure as Connection Strings no `appsettings.json`:**
-Altere a propriedade `OracleConnection` com os seus dados de acesso (ex: RM e Senha):
+PowerShell usa `$env:NOME = "valor"` no lugar de `export`.
+
+A API sobe em `http://localhost:5109`. Documentação OpenAPI em `http://localhost:5109/scalar/v1`.
+
+### Docker Compose
+
+```bash
+cp .env.example .env    # preencha os valores
+docker compose up -d --build
+```
+
+Sobe Oracle XE (1521) e a API (8080). O Compose falha com mensagem explícita se alguma variável do `.env` estiver faltando.
+
+A imagem usa build multi-stage (`sdk:9.0` → `aspnet:9.0`), porta não privilegiada 8080 e executa como o usuário `app` (UID 1654, sem privilégios). O diretório `/app/logs`, onde o Serilog grava, tem a posse transferida para esse usuário antes do `USER app`.
+
+### Endpoints
+
+Autenticação por JWT Bearer. `POST /api/auth/login` devolve o token. Escritas (`POST`, `PUT`, `DELETE`) exigem token; leituras e health checks são públicos.
+
+| Recurso | Rota base |
+|---|---|
+| Tutores (`DONOS`) | `/api/tutores` |
+| Funcionários | `/api/funcionarios` |
+| Pets | `/api/pets` |
+| Consultas | `/api/consultas` |
+| Medicamentos | `/api/medicamentos` |
+| Vacinas | `/api/vacinas` |
+| Consultas × medicamentos | `/api/consultamedicamentos` |
+
+Todos expõem CRUD completo — `GET` paginado, `GET /{id}`, `POST`, `PUT /{id}`, `DELETE /{id}` — além de filtros específicos por recurso (e-mail, espécie, período, pendentes).
+
+---
+
+## Observabilidade
+
+### Health checks
+
+Implementados com `Microsoft.Extensions.Diagnostics.HealthChecks`, separados por tag.
+
+| Endpoint | Verifica | Respostas |
+|---|---|---|
+| `GET /health/live` | Liveness. Processo ASP.NET Core de pé. Não toca o banco. | `200 Healthy` |
+| `GET /health/ready` | Readiness. Conectividade real com o banco via `AppDbContext`, timeout de 5s. | `200 Healthy` ou `503 Unhealthy` |
+| `GET /health` | Agregado dos dois checks. | `200` ou `503` |
+
+Liveness não depende do banco, para servir de sonda de reinício de container. Readiness valida a conexão: com o Oracle indisponível, `/health/ready` devolve 503 enquanto `/health/live` continua 200.
+
+Resposta:
+
 ```json
-"ConnectionStrings": {
-  "OracleConnection": "User Id=RMXXXXXX;Password=sua_senha;Data Source=oracle.fiap.com.br:1521/ORCL"
+{
+  "status": "Healthy",
+  "totalDurationMs": 12.4,
+  "timestamp": "2026-08-26T13:20:11.4521Z",
+  "correlationId": "69291123c0fa8fcb5fff9d8492aed136",
+  "checks": [
+    { "name": "self", "status": "Healthy", "durationMs": 0.03, "tags": ["live"] },
+    { "name": "oracle", "status": "Healthy", "durationMs": 12.1, "tags": ["ready"] }
+  ]
 }
 ```
 
-**3. Restaure as dependências e compile o projeto:**
-```bash
-dotnet restore
-dotnet build
-```
+### Logging
 
-**4. Executar as migrações (EF Core Migrations):**
-```bash
-dotnet ef database update
-```
+Serilog configurado em `appsettings.json`, com saída simultânea para console e arquivo (`logs/clyvovet-.log`, rotação diária, retenção de 7 arquivos). Nível padrão Information, com override Warning para `Microsoft.AspNetCore`, `Microsoft.EntityFrameworkCore` e `System`.
 
-**5. Rode o aplicativo:**
-```bash
-dotnet run
-```
-A API iniciará localmente. A nova documentação interativa (Scalar API Reference) estará disponível em: [http://localhost:5109/scalar/v1](http://localhost:5109/scalar/v1).
+Correlação de requisições: o middleware aceita o header `X-Correlation-Id` do cliente (até 64 caracteres alfanuméricos) ou usa o TraceId do W3C Trace Context. O valor aparece em todas as linhas de log da requisição, no header da resposta, no campo `traceId` do ProblemDetails e como tag `clyvovet.correlation_id` no span.
 
-**6. Execute os Testes Unitários:**
-O projeto conta com uma suíte de **51 testes unitários automatizados** implementada em **xUnit** e **Moq**, cobrindo 100% dos fluxos e regras de negócio da camada de serviços (`Services`) e o motor de Inteligência Preventiva. Para rodá-los:
+E-mails são mascarados nos logs e nas mensagens de erro.
+
+### Tracing e métricas
+
+OpenTelemetry com instrumentação ASP.NET Core e runtime, mais um `ActivitySource` próprio usado em `ConsultaService`, `VacinaService`, `IntelligenceService` e nos repositórios de consulta, pet e vacina.
+
+Tempo de resposta vem de `http.server.request.duration`. Taxa de erros vem da métrica `clyvovet.http.errors`, dimensionada por método, status code e `error.kind` (client/server).
+
+Exportação por console ou OTLP, conforme as variáveis de ambiente. `docker-compose.observability.yml` sobe o Aspire Dashboard em `http://localhost:18888`.
+
 ```bash
-dotnet test
+export OpenTelemetry__ConsoleExporter=true      # inspeção local
+export OpenTelemetry__OtlpEndpoint=http://localhost:4317
 ```
 
 ---
 
-### Execução via Docker Compose (Ideal para Testes e DevOps)
+## Como rodar os testes
 
-O projeto possui suporte nativo a contêineres Docker robustos e seguros (aplicação rodando sob usuário sem privilégios de administrador - `non-root` e com volumes de persistência de dados).
-
-**1. Certifique-se de que o Docker esteja em execução e execute na raiz do projeto:**
 ```bash
-docker-compose up -d --build
+dotnet test                                  # solution inteira — 163 testes
+dotnet test ClyvoVetApi.Tests.Unit           # 127 unitários
+dotnet test ClyvoVetApi.Tests.Integration    #  36 de integração
 ```
 
-Isso criará e iniciará dois serviços em background:
-* **`oracle-db`:** Banco de dados Oracle XE conteinerizado escutando na porta `1521` com volume persistente para os dados.
-* **`api`:** A API ClyvoVet compilada sob contêiner Linux escutando na porta `8080`.
+Os testes não tocam o Oracle e não exigem nenhuma variável de ambiente.
 
-**2. Acesse a aplicação:**
-* Scalar UI: [http://localhost:8080/scalar/v1](http://localhost:8080/scalar/v1)
-* Endpoints API: [http://localhost:8080/api/tutores](http://localhost:8080/api/tutores)
+**Unitários.** xUnit com Moq nas dependências, padrão AAA e nomenclatura `MetodoTestado_Cenario_ResultadoEsperado`. Cobrem os oito Services (regras de negócio, validações, exceções de domínio e interações esperadas com os repositórios), o `AuthService` (credenciais válidas e inválidas, configuração ausente, expiração, issuer, audience e unicidade do jti) e o `SensitiveDataMasker`. `TestDataFixture` gera entidades com valores padrão coerentes e é consumida via `IClassFixture` por `PetServiceTests` e `VacinaServiceTests`; como não guarda estado mutável, os testes seguem isolados.
+
+**Integração.** `WebApplicationFactory<Program>` sobe a API real no ambiente `Testing`, com SQLite in-memory no lugar do Oracle — banco relacional de verdade, que aplica chaves estrangeiras e check constraints sem depender de Docker. `IntegrationTestFixture` concentra factory, conexão e seed; `IntegrationTestCollection` compartilha a fixture entre as classes via `ICollectionFixture` e garante execução sequencial. O banco é resetado a cada teste, o `AlertScheduler` não é registrado, e o logger do Serilog é substituído por um sem sinks para que a suíte não escreva em `logs/`.
+
+Cobertura: autenticação (login válido e inválido, token ausente, malformado, expirado e assinado com outra chave), fluxos HTTP (201 com header `Location` confirmado por GET subsequente, 200, 204), erros (400 de validação, 400 de regra de negócio, 404, 401, formato do ProblemDetails) e health checks (`/health/live`, `/health/ready` exercitando a conectividade com o banco, `/health` agregado, separação por tags e payload com durações e correlation ID).
+
+### Cobertura de código
+
+```bash
+dotnet test --collect:"XPlat Code Coverage"
+```
+
+Relatório por suíte em `<projeto>/TestResults/<guid>/coverage.cobertura.xml`. Última execução, somando as duas suítes:
+
+| Camada | Linhas |
+|---|---|
+| Services | 92,6% |
+| Models | 100% |
+| DTOs | 100% |
+| Middleware, Observability e Logging | 100% |
+| Auth | 100% |
+| Data | 93,7% |
+| Exceptions | 81,4% |
+| HealthChecks | 70,7% |
+| Global | 58,7% (72,5% sem as migrations) |
+
+O número global inclui Controllers e Repositories, exercitados apenas nos fluxos escolhidos para os testes de integração, além de `Program.cs` e das migrations.
 
 ---
 
-## ☁️ DevOps: Provisionamento e Deployment na Nuvem (Azure CLI)
+## Limitações
 
-Para fins de avaliação prática na disciplina de **DevOps & Cloud Computing**, abaixo está disponibilizado o **script completo automatizado em Azure CLI** para provisionamento da infraestrutura de VM Linux, configuração de rede e deployment contínuo via Docker da API na nuvem Azure.
-
-### Script de Provisionamento e Deploy (PowerShell/Bash)
-Substitua `seuNomeRM` pelas suas iniciais/RM para gerar recursos globais únicos no Azure:
-
-```bash
-# 1. Definir variáveis globais de infraestrutura
-RESOURCE_GROUP="rg-clyvovet-seuNomeRM"
-LOCATION="eastus"
-VM_NAME="vm-clyvovet-api"
-IMAGE="Ubuntu2204"
-ADMIN_USERNAME="clyvovetuser"
-PORT_API="8080"
-
-# 2. Criar o Resource Group no Azure
-az group create --name $RESOURCE_GROUP --location $LOCATION
-
-# 3. Criar a Máquina Virtual Linux (Ubuntu 22.04 LTS) com chaves SSH automáticas
-az vm create \
-  --resource-group $RESOURCE_GROUP \
-  --name $VM_NAME \
-  --image $IMAGE \
-  --admin-username $ADMIN_USERNAME \
-  --generate-ssh-keys \
-  --public-ip-sku Standard
-
-# 4. Abrir as portas necessárias no Network Security Group (NSG) da VM
-# Abre a porta 8080 para tráfego externo da API Web
-az vm open-port --resource-group $RESOURCE_GROUP --name $VM_NAME --port $PORT_API --priority 1001
-
-# 5. Executar o Script de Instalação Automatizado dentro da VM criada (via az vm run-command)
-az vm run-command invoke \
-  --resource-group $RESOURCE_GROUP \
-  --name $VM_NAME \
-  --command-id RunShellScript \
-  --scripts "
-    # Atualizar repositórios do sistema
-    sudo apt-get update -y
-    sudo apt-get upgrade -y
-
-    # Instalar pré-requisitos fundamentais (Git, nano)
-    sudo apt-get install -y git curl nano gnupg lsb-release
-
-    # Instalar o Docker Engine de forma oficial e segura
-    sudo mkdir -p /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    echo 'deb [arch=\$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \$(lsb_release -cs) stable' | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-    sudo apt-get update -y
-    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
-
-    # Criar grupo Docker e adicionar o usuário para rodar sem privilégios root administrativos
-    sudo usermod -aG docker $ADMIN_USERNAME
-
-    # Clonar o repositório público da solução dentro da VM
-    cd /home/$ADMIN_USERNAME
-    git clone https://github.com/gabriel-g-dev/ClyvoVetApi.git
-    cd ClyvoVetApi
-
-    # Subir toda a infraestrutura da aplicação (API + Banco Oracle XE) em background
-    sudo docker compose up -d --build
-  "
-
-# 6. Obter o IP Público da Máquina Virtual para realizar testes externos
-PUBLIC_IP=$(az network public-ip show --resource-group $RESOURCE_GROUP --name ${VM_NAME}PublicIP --query "ipAddress" --output tsv)
-
-echo "🚀 Deployment efetuado com sucesso na nuvem!"
-echo "🔗 Acesse a Documentação Interativa (Scalar) da API na nuvem em: http://$PUBLIC_IP:$PORT_API/scalar/v1"
-```
-
-### Script de Descarte e Limpeza (Obrigatório para Evitar Custos)
-Ao finalizar a avaliação do professor, execute o comando abaixo para deletar instantaneamente todos os recursos criados (máquina virtual, discos, IP público, segurança e redes) evitando cobranças na sua assinatura Azure:
-
-```bash
-# Deletar o Resource Group completo e todos os seus recursos filhos de forma assíncrona
-az group delete --name rg-clyvovet-seuNomeRM --yes --no-wait
-echo "🧹 Limpeza de recursos agendada no Azure com sucesso!"
-```
+- **Migrations dessincronizadas.** Os arquivos em `Migrations/` descrevem uma modelagem anterior e não refletem o `AppDbContext`. Precisam ser regeneradas junto com a disciplina de Database. O mesmo vale para `script.sql`, mantido por vínculo com outra disciplina — o DDL válido é o `script_bd.sql`.
+- **Leitura pública.** Todos os `GET` seguem sem autenticação nesta Sprint, embora algumas respostas incluam nome, e-mail e telefone de tutores.
+- **Rota de tutores.** `DonosController` responde em `/api/tutores`, herança da renomeação Tutor → Dono. `/api/donos` retorna 404.
+- **AlertScheduler** não possui testes automatizados.
+- **Docker não validado em execução.** `Dockerfile` e `docker-compose.yml` foram revisados estaticamente; a máquina de desenvolvimento não possui Docker instalado. O mesmo vale para o Aspire Dashboard — o caminho de observabilidade validado foi o Console exporter.

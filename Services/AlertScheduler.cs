@@ -1,4 +1,5 @@
 using ClyvoVetApi.Data;
+using ClyvoVetApi.Logging;
 using Microsoft.EntityFrameworkCore;
 
 namespace ClyvoVetApi.Services;
@@ -14,7 +15,6 @@ public class AlertScheduler(
     {
         _logger.LogInformation("⏰ ClyvoVet AlertScheduler Background Service inicializado e rodando.");
 
-        // Usa o PeriodicTimer nativo do .NET
         using var timer = new PeriodicTimer(TimeSpan.FromMinutes(2));
 
         while (await timer.WaitForNextTickAsync(stoppingToken) && !stoppingToken.IsCancellationRequested)
@@ -26,7 +26,6 @@ public class AlertScheduler(
                 using var scope = _scopeFactory.CreateScope();
                 var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-                // Limiar de data para vacinas próximas do vencimento (próximos 3 dias ou já vencidas)
                 var limiteData = DateTime.Today.AddDays(3);
 
                 var vacinasPendentes = await context.Vacinas
@@ -51,17 +50,16 @@ public class AlertScheduler(
                     if (dono != null && pet != null)
                     {
                         var statusVacina = vacina.Data < DateTime.Today ? "VENCIDA ❌" : "PRÓXIMA 📅";
-                        var mensagem = $"Olá, {dono.Nome}! Lembramos que a vacina {vacina.Nome} de seu pet {pet.Nome} está {statusVacina}. Por favor, agende uma consulta no ClyvoVet.";
 
                         _logger.LogWarning(
-                            "🔔 [NOTIFICAÇÃO ENVIADA] Destinatário: {DonoNome} <{DonoEmail}> | Pet: {PetNome} | Vacina: {VacinaNome} | Status: {Status} | Data Limite: {Data:dd/MM/yyyy}. Mensagem: '{Mensagem}'",
-                            dono.Nome,
-                            dono.Email,
-                            pet.Nome,
+                            "🔔 [NOTIFICAÇÃO SIMULADA] DonoId: {DonoId} <{DonoEmail}> | PetId: {PetId} | VacinaId: {VacinaId} | Vacina: {VacinaNome} | Status: {Status} | Data Limite: {Data:dd/MM/yyyy}",
+                            dono.Id,
+                            SensitiveDataMasker.MaskEmails(dono.Email),
+                            pet.Id,
+                            vacina.Id,
                             vacina.Nome,
                             statusVacina,
-                            vacina.Data,
-                            mensagem
+                            vacina.Data
                         );
                     }
                 }

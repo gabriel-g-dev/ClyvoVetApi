@@ -1,6 +1,7 @@
 using ClyvoVetApi.DTOs.Request;
 using ClyvoVetApi.DTOs.Response;
 using ClyvoVetApi.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClyvoVetApi.Controllers;
@@ -12,12 +13,6 @@ public class FuncionariosController(IFuncionarioService service) : ControllerBas
 {
     private readonly IFuncionarioService _service = service;
 
-    /// <summary>
-    /// Lista todos os funcionários com paginação
-    /// </summary>
-    /// <param name="page">Número da página (inicia em 1)</param>
-    /// <param name="pageSize">Tamanho da página (padrão 10)</param>
-    /// <returns>Retorna uma lista paginada de funcionários</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponseDto<FuncionarioResponseDto>))]
     public async Task<IActionResult> GetFuncionarios(
@@ -28,11 +23,6 @@ public class FuncionariosController(IFuncionarioService service) : ControllerBas
         return Ok(result);
     }
 
-    /// <summary>
-    /// Busca um funcionário pelo seu ID
-    /// </summary>
-    /// <param name="id">ID do funcionário</param>
-    /// <returns>Retorna os detalhes do funcionário</returns>
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FuncionarioResponseDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
@@ -42,11 +32,6 @@ public class FuncionariosController(IFuncionarioService service) : ControllerBas
         return Ok(result);
     }
 
-    /// <summary>
-    /// Busca um funcionário pelo seu e-mail
-    /// </summary>
-    /// <param name="email">E-mail do funcionário</param>
-    /// <returns>Retorna os detalhes do funcionário encontrado</returns>
     [HttpGet("email/{email}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FuncionarioResponseDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
@@ -56,11 +41,6 @@ public class FuncionariosController(IFuncionarioService service) : ControllerBas
         return Ok(result);
     }
 
-    /// <summary>
-    /// Busca funcionários de um determinado setor
-    /// </summary>
-    /// <param name="setor">Nome do setor (Ex: Veterinária, Recepção)</param>
-    /// <returns>Lista de funcionários do setor</returns>
     [HttpGet("setor/{setor}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FuncionarioResponseDto>))]
     public async Task<IActionResult> GetFuncionariosBySetor(string setor)
@@ -69,11 +49,6 @@ public class FuncionariosController(IFuncionarioService service) : ControllerBas
         return Ok(result);
     }
 
-    /// <summary>
-    /// Busca funcionários de um determinado cargo
-    /// </summary>
-    /// <param name="cargo">Nome do cargo (Ex: Veterinário Clínico, Atendente)</param>
-    /// <returns>Lista de funcionários com o cargo informado</returns>
     [HttpGet("cargo/{cargo}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<FuncionarioResponseDto>))]
     public async Task<IActionResult> GetFuncionariosByCargo(string cargo)
@@ -82,11 +57,7 @@ public class FuncionariosController(IFuncionarioService service) : ControllerBas
         return Ok(result);
     }
 
-    /// <summary>
-    /// Cadastra um novo funcionário
-    /// </summary>
-    /// <param name="dto">Dados para cadastro do funcionário</param>
-    /// <returns>Retorna o funcionário recém-criado</returns>
+    [Authorize]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(FuncionarioResponseDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
@@ -96,12 +67,7 @@ public class FuncionariosController(IFuncionarioService service) : ControllerBas
         return CreatedAtAction(nameof(GetFuncionario), new { id = result.Id }, result);
     }
 
-    /// <summary>
-    /// Atualiza as informações de um funcionário existente
-    /// </summary>
-    /// <param name="id">ID do funcionário a ser atualizado</param>
-    /// <param name="dto">Novos dados do funcionário</param>
-    /// <returns>Retorna o funcionário atualizado</returns>
+    [Authorize]
     [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FuncionarioResponseDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
@@ -112,11 +78,7 @@ public class FuncionariosController(IFuncionarioService service) : ControllerBas
         return Ok(result);
     }
 
-    /// <summary>
-    /// Remove um funcionário pelo seu ID
-    /// </summary>
-    /// <param name="id">ID do funcionário a ser excluído</param>
-    /// <returns>Retorna status 204 NoContent indicando sucesso</returns>
+    [Authorize]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]

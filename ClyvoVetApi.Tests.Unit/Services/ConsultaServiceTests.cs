@@ -6,7 +6,7 @@ using ClyvoVetApi.Services;
 using Moq;
 using Xunit;
 
-namespace ClyvoVetApi.Tests.Services;
+namespace ClyvoVetApi.Tests.Unit.Services;
 
 public class ConsultaServiceTests
 {
@@ -24,212 +24,202 @@ public class ConsultaServiceTests
     }
 
     [Fact]
-    public async Task GetAllAsync_ReturnsPagedResponse()
+    public async Task GetAllAsync_WhenCalled_ReturnsPagedResponse()
     {
-        // Arrange
-        var page = 1;
-        var pageSize = 10;
         var consultas = new List<Consulta>
         {
             new() { Id = 1, Tipo = "Geral", Valor = 150.00m, Descricao = "Rotina", Status = "R", Data = DateTime.Now, PetId = 1, FuncionarioId = 1 },
             new() { Id = 2, Tipo = "Retorno", Valor = 100.00m, Descricao = "Checkup", Status = "A", Data = DateTime.Now, PetId = 1, FuncionarioId = 1 }
         };
-        _repositoryMock.Setup(r => r.GetAllAsync(page, pageSize))
-            .ReturnsAsync((consultas, 2));
+        _repositoryMock.Setup(r => r.GetAllAsync(1, 10)).ReturnsAsync((consultas, 2));
 
-        // Act
-        var result = await _service.GetAllAsync(page, pageSize);
+        var result = await _service.GetAllAsync(1, 10);
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(page, result.Page);
+        Assert.Equal(1, result.Page);
         Assert.Equal(2, result.TotalItems);
         Assert.Equal(2, result.Data.Count());
     }
 
     [Fact]
-    public async Task GetByIdAsync_WhenConsultaExists_ReturnsResponseDto()
+    public async Task GetByIdAsync_WhenConsultaExists_ReturnsConsulta()
     {
-        // Arrange
-        var id = 1;
-        var consulta = new Consulta 
-        { 
-            Id = id, 
-            Tipo = "Geral", 
-            Valor = 150.00m, 
-            Descricao = "Rotina", 
-            Status = "R", 
+        var consulta = new Consulta
+        {
+            Id = 1,
+            Tipo = "Geral",
+            Valor = 150.00m,
+            Descricao = "Rotina",
+            Status = "R",
             Data = DateTime.Now,
-            Pet = new Pet { Id = 1, Nome = "Rex" } 
+            Pet = new Pet { Id = 1, Nome = "Rex" }
         };
-        _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(consulta);
+        _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(consulta);
 
-        // Act
-        var result = await _service.GetByIdAsync(id);
+        var result = await _service.GetByIdAsync(1);
 
-        // Assert
-        Assert.NotNull(result);
-        Assert.Equal(id, result.Id);
+        Assert.Equal(1, result.Id);
         Assert.Equal("Rex", result.PetNome);
     }
 
     [Fact]
     public async Task GetByIdAsync_WhenConsultaDoesNotExist_ThrowsNotFoundException()
     {
-        // Arrange
-        var id = 99;
-        _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((Consulta?)null);
+        _repositoryMock.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Consulta?)null);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _service.GetByIdAsync(id));
+        await Assert.ThrowsAsync<NotFoundException>(() => _service.GetByIdAsync(99));
     }
 
     [Fact]
-    public async Task GetByPeriodoAsync_WhenStartAfterEnd_ThrowsBusinessException()
+    public async Task GetByFuncionarioIdAsync_WhenCalled_ReturnsConsultasDoFuncionario()
     {
-        // Arrange
+        var consultas = new List<Consulta>
+        {
+            new() { Id = 1, Tipo = "Geral", Descricao = "Rotina", Status = "R", Data = DateTime.Now, PetId = 1, FuncionarioId = 7 }
+        };
+        _repositoryMock.Setup(r => r.GetByFuncionarioIdAsync(7)).ReturnsAsync(consultas);
+
+        var result = await _service.GetByFuncionarioIdAsync(7);
+
+        var consulta = Assert.Single(result);
+        Assert.Equal(7, consulta.FuncionarioId);
+    }
+
+    [Fact]
+    public async Task GetByPeriodoAsync_WhenStartIsAfterEnd_ThrowsBusinessException()
+    {
         var inicio = DateTime.Now.AddDays(1);
         var fim = DateTime.Now;
 
-        // Act & Assert
         await Assert.ThrowsAsync<BusinessException>(() => _service.GetByPeriodoAsync(inicio, fim));
+        _repositoryMock.Verify(r => r.GetByPeriodoAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task GetByPeriodoAsync_WhenPeriodIsValid_ReturnsConsultas()
+    {
+        var inicio = DateTime.Now.AddDays(-7);
+        var fim = DateTime.Now;
+        var consultas = new List<Consulta>
+        {
+            new() { Id = 1, Tipo = "Geral", Descricao = "Rotina", Status = "R", Data = DateTime.Now.AddDays(-1), PetId = 1, FuncionarioId = 1 }
+        };
+        _repositoryMock.Setup(r => r.GetByPeriodoAsync(inicio, fim)).ReturnsAsync(consultas);
+
+        var result = await _service.GetByPeriodoAsync(inicio, fim);
+
+        Assert.Single(result);
     }
 
     [Fact]
     public async Task CreateAsync_WhenPetDoesNotExist_ThrowsBusinessException()
     {
-        // Arrange
         var dto = new ConsultaRequestDto { Tipo = "Geral", Valor = 100m, Descricao = "Rotina", Status = "A", Data = DateTime.Now, PetId = 99, FuncionarioId = 1 };
         _petRepositoryMock.Setup(p => p.GetByIdAsync(dto.PetId)).ReturnsAsync((Pet?)null);
 
-        // Act & Assert
         await Assert.ThrowsAsync<BusinessException>(() => _service.CreateAsync(dto));
+        _repositoryMock.Verify(r => r.CreateAsync(It.IsAny<Consulta>()), Times.Never);
     }
 
     [Fact]
     public async Task CreateAsync_WhenFuncionarioDoesNotExist_ThrowsBusinessException()
     {
-        // Arrange
         var dto = new ConsultaRequestDto { Tipo = "Geral", Valor = 100m, Descricao = "Rotina", Status = "A", Data = DateTime.Now, PetId = 1, FuncionarioId = 99 };
         _petRepositoryMock.Setup(p => p.GetByIdAsync(dto.PetId)).ReturnsAsync(new Pet { Id = 1 });
         _funcionarioRepositoryMock.Setup(f => f.GetByIdAsync(dto.FuncionarioId)).ReturnsAsync((Funcionario?)null);
 
-        // Act & Assert
         await Assert.ThrowsAsync<BusinessException>(() => _service.CreateAsync(dto));
+        _repositoryMock.Verify(r => r.CreateAsync(It.IsAny<Consulta>()), Times.Never);
     }
 
     [Fact]
-    public async Task CreateAsync_WhenSuccessful_ReturnsResponseDto()
+    public async Task CreateAsync_WhenDataIsValid_ReturnsCreatedConsulta()
     {
-        // Arrange
         var dto = new ConsultaRequestDto { Tipo = "Geral", Valor = 150m, Descricao = "Rotina", Status = "A", Data = DateTime.Now, PetId = 1, FuncionarioId = 1 };
         var pet = new Pet { Id = 1, Nome = "Rex" };
-        var funcionario = new Funcionario { Id = 1, Nome = "Dr. Silva" };
+        var funcionario = new Funcionario { Id = 1, Nome = "Dra. Ana" };
 
         _petRepositoryMock.Setup(p => p.GetByIdAsync(dto.PetId)).ReturnsAsync(pet);
         _funcionarioRepositoryMock.Setup(f => f.GetByIdAsync(dto.FuncionarioId)).ReturnsAsync(funcionario);
         _repositoryMock.Setup(r => r.CreateAsync(It.IsAny<Consulta>()))
             .ReturnsAsync((Consulta c) => { c.Id = 10; return c; });
 
-        // Act
         var result = await _service.CreateAsync(dto);
 
-        // Assert
-        Assert.NotNull(result);
         Assert.Equal(10, result.Id);
         Assert.Equal("Rex", result.PetNome);
+        Assert.Equal("Dra. Ana", result.FuncionarioNome);
     }
 
     [Fact]
     public async Task UpdateAsync_WhenConsultaDoesNotExist_ThrowsNotFoundException()
     {
-        // Arrange
-        var id = 99;
         var dto = new ConsultaRequestDto { Tipo = "Geral", Valor = 150m, Descricao = "Rotina", Status = "A", Data = DateTime.Now, PetId = 1, FuncionarioId = 1 };
-        _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((Consulta?)null);
+        _repositoryMock.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Consulta?)null);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _service.UpdateAsync(id, dto));
+        await Assert.ThrowsAsync<NotFoundException>(() => _service.UpdateAsync(99, dto));
     }
 
     [Fact]
     public async Task UpdateAsync_WhenPetDoesNotExist_ThrowsBusinessException()
     {
-        // Arrange
-        var id = 1;
-        var consulta = new Consulta { Id = id, Tipo = "Geral", Valor = 150m, Descricao = "Rotina", Status = "A", Data = DateTime.Now, PetId = 1, FuncionarioId = 1 };
+        var consulta = new Consulta { Id = 1, Tipo = "Geral", Valor = 150m, Descricao = "Rotina", Status = "A", Data = DateTime.Now, PetId = 1, FuncionarioId = 1 };
         var dto = new ConsultaRequestDto { Tipo = "Geral", Valor = 150m, Descricao = "Rotina", Status = "A", Data = DateTime.Now, PetId = 99, FuncionarioId = 1 };
 
-        _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(consulta);
+        _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(consulta);
         _petRepositoryMock.Setup(p => p.GetByIdAsync(dto.PetId)).ReturnsAsync((Pet?)null);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<BusinessException>(() => _service.UpdateAsync(id, dto));
+        await Assert.ThrowsAsync<BusinessException>(() => _service.UpdateAsync(1, dto));
     }
 
     [Fact]
     public async Task UpdateAsync_WhenFuncionarioDoesNotExist_ThrowsBusinessException()
     {
-        // Arrange
-        var id = 1;
-        var consulta = new Consulta { Id = id, Tipo = "Geral", Valor = 150m, Descricao = "Rotina", Status = "A", Data = DateTime.Now, PetId = 1, FuncionarioId = 1 };
+        var consulta = new Consulta { Id = 1, Tipo = "Geral", Valor = 150m, Descricao = "Rotina", Status = "A", Data = DateTime.Now, PetId = 1, FuncionarioId = 1 };
         var dto = new ConsultaRequestDto { Tipo = "Geral", Valor = 150m, Descricao = "Rotina", Status = "A", Data = DateTime.Now, PetId = 1, FuncionarioId = 99 };
 
-        _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(consulta);
+        _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(consulta);
         _petRepositoryMock.Setup(p => p.GetByIdAsync(dto.PetId)).ReturnsAsync(new Pet { Id = 1 });
         _funcionarioRepositoryMock.Setup(f => f.GetByIdAsync(dto.FuncionarioId)).ReturnsAsync((Funcionario?)null);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<BusinessException>(() => _service.UpdateAsync(id, dto));
+        await Assert.ThrowsAsync<BusinessException>(() => _service.UpdateAsync(1, dto));
     }
 
     [Fact]
-    public async Task UpdateAsync_WhenSuccessful_ReturnsResponseDto()
+    public async Task UpdateAsync_WhenDataIsValid_ReturnsUpdatedConsulta()
     {
-        // Arrange
-        var id = 1;
-        var consulta = new Consulta { Id = id, Tipo = "Geral", Valor = 150m, Descricao = "Rotina", Status = "A", Data = DateTime.Now, PetId = 1, FuncionarioId = 1 };
+        var consulta = new Consulta { Id = 1, Tipo = "Geral", Valor = 150m, Descricao = "Rotina", Status = "A", Data = DateTime.Now, PetId = 1, FuncionarioId = 1 };
         var pet = new Pet { Id = 1, Nome = "Rex" };
-        var funcionario = new Funcionario { Id = 1, Nome = "Dr. Silva" };
+        var funcionario = new Funcionario { Id = 1, Nome = "Dra. Ana" };
         var dto = new ConsultaRequestDto { Tipo = "Geral", Valor = 200m, Descricao = "Rotina Alterada", Status = "R", Data = DateTime.Now, PetId = 1, FuncionarioId = 1 };
 
-        _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(consulta);
+        _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(consulta);
         _petRepositoryMock.Setup(p => p.GetByIdAsync(1)).ReturnsAsync(pet);
         _funcionarioRepositoryMock.Setup(f => f.GetByIdAsync(1)).ReturnsAsync(funcionario);
         _repositoryMock.Setup(r => r.UpdateAsync(It.IsAny<Consulta>())).ReturnsAsync((Consulta c) => c);
 
-        // Act
-        var result = await _service.UpdateAsync(id, dto);
+        var result = await _service.UpdateAsync(1, dto);
 
-        // Assert
-        Assert.NotNull(result);
         Assert.Equal("Rotina Alterada", result.Descricao);
-        Assert.Equal("Rex", result.PetNome);
+        Assert.Equal("R", result.Status);
+        Assert.Equal(200m, result.Valor);
     }
 
     [Fact]
     public async Task DeleteAsync_WhenConsultaDoesNotExist_ThrowsNotFoundException()
     {
-        // Arrange
-        var id = 99;
-        _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync((Consulta?)null);
+        _repositoryMock.Setup(r => r.GetByIdAsync(99)).ReturnsAsync((Consulta?)null);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _service.DeleteAsync(id));
+        await Assert.ThrowsAsync<NotFoundException>(() => _service.DeleteAsync(99));
     }
 
     [Fact]
-    public async Task DeleteAsync_WhenSuccessful_CallsRepositoryDelete()
+    public async Task DeleteAsync_WhenConsultaExists_CallsRepositoryDelete()
     {
-        // Arrange
-        var id = 1;
-        var consulta = new Consulta { Id = id, Descricao = "Rotina" };
-        _repositoryMock.Setup(r => r.GetByIdAsync(id)).ReturnsAsync(consulta);
+        var consulta = new Consulta { Id = 1, Descricao = "Rotina" };
+        _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(consulta);
 
-        // Act
-        await _service.DeleteAsync(id);
+        await _service.DeleteAsync(1);
 
-        // Assert
         _repositoryMock.Verify(r => r.DeleteAsync(consulta), Times.Once);
     }
 }

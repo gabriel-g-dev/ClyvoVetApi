@@ -6,7 +6,7 @@ public class Consulta
     public string Tipo { get; set; } = string.Empty;
     public decimal Valor { get; set; }
     public string Descricao { get; set; } = string.Empty;
-    public string Status { get; set; } = "A"; // 'A' (Agendada), 'C' (Cancelada), 'R' (Realizada)
+    public string Status { get; set; } = "A";
     public DateTime Data { get; set; }
 
     public int PetId { get; set; }

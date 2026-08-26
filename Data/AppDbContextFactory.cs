@@ -5,12 +5,18 @@ namespace ClyvoVetApi.Data;
 
 public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
+    private const string ConexaoDesignTime = "Data Source=design-time";
+
     public AppDbContext CreateDbContext(string[] args)
     {
-        var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-        
-      optionsBuilder.UseOracle("User Id=SEU_RM;Password=SUA_SENHA;Data Source=oracle.fiap.com.br:1521/ORCL");
+        var connectionString =
+            Environment.GetEnvironmentVariable("ConnectionStrings__OracleConnection")
+            ?? ConexaoDesignTime;
 
-        return new AppDbContext(optionsBuilder.Options);
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseOracle(connectionString)
+            .Options;
+
+        return new AppDbContext(options);
     }
 }

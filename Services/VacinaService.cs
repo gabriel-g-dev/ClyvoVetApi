@@ -2,6 +2,7 @@ using ClyvoVetApi.DTOs.Request;
 using ClyvoVetApi.DTOs.Response;
 using ClyvoVetApi.Exceptions;
 using ClyvoVetApi.Models;
+using ClyvoVetApi.Observability;
 using ClyvoVetApi.Repositories.Interfaces;
 using ClyvoVetApi.Services.Interfaces;
 
@@ -33,6 +34,8 @@ public class VacinaService(IVacinaRepository repository, IPetRepository petRepos
 
     public async Task<IEnumerable<VacinaResponseDto>> GetPendentesAsync()
     {
+        using var activity = Telemetry.Source.StartActivity("VacinaService.GetPendentes");
+
         var items = await _repository.GetPendentesAsync();
         return items.Select(ToResponseDto);
     }

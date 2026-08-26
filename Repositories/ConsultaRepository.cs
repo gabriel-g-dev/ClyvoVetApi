@@ -1,5 +1,6 @@
 using ClyvoVetApi.Data;
 using ClyvoVetApi.Models;
+using ClyvoVetApi.Observability;
 using ClyvoVetApi.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -46,8 +47,13 @@ public class ConsultaRepository(AppDbContext context) : IConsultaRepository
 
     public async Task<Consulta> CreateAsync(Consulta consulta)
     {
+        using var activity = Telemetry.Source.StartActivity("ConsultaRepository.Create");
+        activity?.SetTag("db.system", "oracle");
+
         _context.Consultas.Add(consulta);
         await _context.SaveChangesAsync();
+
+        activity?.SetTag("consulta.id", consulta.Id);
         return consulta;
     }
 

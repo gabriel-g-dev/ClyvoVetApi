@@ -1,6 +1,7 @@
 using ClyvoVetApi.DTOs.Request;
 using ClyvoVetApi.DTOs.Response;
 using ClyvoVetApi.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ClyvoVetApi.Controllers;
@@ -12,12 +13,6 @@ public class DonosController(IDonoService service) : ControllerBase
 {
     private readonly IDonoService _service = service;
 
-    /// <summary>
-    /// Lista todos os donos com paginação
-    /// </summary>
-    /// <param name="page">Número da página (inicia em 1)</param>
-    /// <param name="pageSize">Tamanho da página (padrão 10)</param>
-    /// <returns>Retorna uma lista paginada de donos</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponseDto<DonoResponseDto>))]
     public async Task<IActionResult> GetDonos(
@@ -28,11 +23,6 @@ public class DonosController(IDonoService service) : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Busca um dono pelo seu ID
-    /// </summary>
-    /// <param name="id">ID único do dono</param>
-    /// <returns>Retorna os detalhes completos do dono e a lista de seus pets</returns>
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DonoDetailsResponseDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
@@ -42,11 +32,6 @@ public class DonosController(IDonoService service) : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Busca um dono pelo seu e-mail
-    /// </summary>
-    /// <param name="email">E-mail cadastrado do dono</param>
-    /// <returns>Retorna os detalhes completos do dono encontrado</returns>
     [HttpGet("email/{email}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DonoDetailsResponseDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
@@ -56,11 +41,6 @@ public class DonosController(IDonoService service) : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Lista os pets de um dono específico
-    /// </summary>
-    /// <param name="id">ID do dono</param>
-    /// <returns>Retorna a lista de pets vinculados ao dono</returns>
     [HttpGet("{id:int}/pets")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<PetDto>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]
@@ -70,11 +50,7 @@ public class DonosController(IDonoService service) : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Cadastra um novo dono
-    /// </summary>
-    /// <param name="dto">Dados para cadastro do dono</param>
-    /// <returns>Retorna o dono recém-criado</returns>
+    [Authorize]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(DonoDetailsResponseDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
@@ -84,12 +60,7 @@ public class DonosController(IDonoService service) : ControllerBase
         return CreatedAtAction(nameof(GetDono), new { id = result.Id }, result);
     }
 
-    /// <summary>
-    /// Atualiza as informações de um dono existente
-    /// </summary>
-    /// <param name="id">ID do dono a ser atualizado</param>
-    /// <param name="dto">Novos dados do dono</param>
-    /// <returns>Retorna o dono com os dados atualizados</returns>
+    [Authorize]
     [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(DonoDetailsResponseDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
@@ -100,11 +71,7 @@ public class DonosController(IDonoService service) : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Remove um dono pelo seu ID
-    /// </summary>
-    /// <param name="id">ID do dono a ser excluído</param>
-    /// <returns>Retorna status 204 NoContent indicando sucesso</returns>
+    [Authorize]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]

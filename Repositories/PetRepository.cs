@@ -1,5 +1,6 @@
 using ClyvoVetApi.Data;
 using ClyvoVetApi.Models;
+using ClyvoVetApi.Observability;
 using ClyvoVetApi.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,13 +22,19 @@ public class PetRepository(AppDbContext context) : IPetRepository
         return (items, total);
     }
 
-    public async Task<Pet?> GetByIdAsync(int id) =>
-        await _context.Pets
+    public async Task<Pet?> GetByIdAsync(int id)
+    {
+        using var activity = Telemetry.Source.StartActivity("PetRepository.GetById");
+        activity?.SetTag("db.system", "oracle");
+        activity?.SetTag("pet.id", id);
+
+        return await _context.Pets
             .Include(p => p.Dono)
             .Include(p => p.Consultas)
             .Include(p => p.Vacinas)
             .AsSplitQuery()
             .FirstOrDefaultAsync(p => p.Id == id);
+    }
 
     public async Task<IEnumerable<Pet>> GetByEspecieAsync(string especie) =>
         await _context.Pets

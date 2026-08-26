@@ -7,7 +7,7 @@ services:
     container_name: oracle-db
 
     environment:
-      ORACLE_PASSWORD: 020207
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:?defina ORACLE_PASSWORD no arquivo .env}
 
     ports:
       - "1521:1521"
@@ -27,6 +27,12 @@ services:
 
     environment:
       ASPNETCORE_URLS: http://+:8080
+      # Segredos vem do .env (local) ou do provedor de nuvem (deploy).
+      # Nenhum destes valores esta versionado no appsettings.json.
+      ConnectionStrings__OracleConnection: ${ConnectionStrings__OracleConnection:?defina ConnectionStrings__OracleConnection no arquivo .env}
+      Auth__Username: ${Auth__Username:?defina Auth__Username no arquivo .env}
+      Auth__Password: ${Auth__Password:?defina Auth__Password no arquivo .env}
+      Auth__SigningKey: ${Auth__SigningKey:?defina Auth__SigningKey no arquivo .env}
 
 volumes:
   oracle_data:

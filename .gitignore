@@ -50,6 +50,9 @@ Generated\ Files/
 # NUnit
 *.VisualState.xml
 TestResult.xml
+
+# Saida de dotnet test --collect (um TestResults por projeto de teste)
+[Tt]est[Rr]esults/
 nunit-*.xml
 
 # Build Results of an ATL Project

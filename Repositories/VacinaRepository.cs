@@ -1,5 +1,6 @@
 using ClyvoVetApi.Data;
 using ClyvoVetApi.Models;
+using ClyvoVetApi.Observability;
 using ClyvoVetApi.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,12 +27,20 @@ public class VacinaRepository(AppDbContext context) : IVacinaRepository
             .Include(v => v.Pet)
             .FirstOrDefaultAsync(v => v.Id == id);
 
-    public async Task<IEnumerable<Vacina>> GetPendentesAsync() =>
-        await _context.Vacinas
+    public async Task<IEnumerable<Vacina>> GetPendentesAsync()
+    {
+        using var activity = Telemetry.Source.StartActivity("VacinaRepository.GetPendentes");
+        activity?.SetTag("db.system", "oracle");
+
+        var vacinas = await _context.Vacinas
             .Include(v => v.Pet)
             .AsNoTracking()
             .Where(v => v.Status == "P")
             .ToListAsync();
+
+        activity?.SetTag("vacinas.count", vacinas.Count);
+        return vacinas;
+    }
 
     public async Task<IEnumerable<Vacina>> GetByNomeAsync(string nome) =>
         await _context.Vacinas

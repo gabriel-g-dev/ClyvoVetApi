@@ -59,8 +59,6 @@ public class PetService(IPetRepository repository, IDonoRepository donoRepositor
         };
 
         var created = await _repository.CreateAsync(pet);
-        
-        // Atribuir o dono para o mapeamento correto do DTO
         created.Dono = dono;
 
         return ToDetailsResponseDto(created);

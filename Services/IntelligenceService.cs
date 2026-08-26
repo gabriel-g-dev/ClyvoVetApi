@@ -1,5 +1,6 @@
 using ClyvoVetApi.DTOs.Response;
 using ClyvoVetApi.Exceptions;
+using ClyvoVetApi.Observability;
 using ClyvoVetApi.Repositories.Interfaces;
 using ClyvoVetApi.Services.Interfaces;
 
@@ -11,6 +12,9 @@ public class IntelligenceService(IPetRepository petRepository) : IIntelligenceSe
 
     public async Task<HealthDashboardResponseDto> GetIntelligencePreventivaAsync(int petId)
     {
+        using var activity = Telemetry.Source.StartActivity("IntelligenceService.GetIntelligencePreventiva");
+        activity?.SetTag("pet.id", petId);
+
         var pet = await _petRepository.GetByIdAsync(petId);
         if (pet == null)
         {
@@ -20,7 +24,6 @@ public class IntelligenceService(IPetRepository petRepository) : IIntelligenceSe
         int score = 100;
         var recomendacoes = new List<string>();
 
-        // 1. Análise de vacinas
         int vacinasAtrasadas = 0;
         int vacinasPendentes = 0;
 
@@ -41,7 +44,6 @@ public class IntelligenceService(IPetRepository petRepository) : IIntelligenceSe
             }
         }
 
-        // 2. Análise de consultas
         var consultasRealizadas = pet.Consultas.Where(c => c.Status == "R").ToList();
         if (pet.Consultas.Count == 0)
         {
@@ -63,10 +65,8 @@ public class IntelligenceService(IPetRepository petRepository) : IIntelligenceSe
             }
         }
 
-        // Garantir limites do score
         score = Math.Clamp(score, 0, 100);
 
-        // 3. Status de saúde
         string status = score switch
         {
             >= 80 => "EXCELENTE",
@@ -74,7 +74,6 @@ public class IntelligenceService(IPetRepository petRepository) : IIntelligenceSe
             _ => "CRÍTICO"
         };
 
-        // 4. Montar recomendações
         if (score == 100)
         {
             recomendacoes.Add("🌟 Excelente! O score de saúde preventiva de seu pet está perfeito! Continue cuidando dele com tanto carinho.");

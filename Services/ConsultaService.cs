@@ -2,6 +2,7 @@ using ClyvoVetApi.DTOs.Request;
 using ClyvoVetApi.DTOs.Response;
 using ClyvoVetApi.Exceptions;
 using ClyvoVetApi.Models;
+using ClyvoVetApi.Observability;
 using ClyvoVetApi.Repositories.Interfaces;
 using ClyvoVetApi.Services.Interfaces;
 
@@ -52,6 +53,10 @@ public class ConsultaService(
 
     public async Task<ConsultaResponseDto> CreateAsync(ConsultaRequestDto dto)
     {
+        using var activity = Telemetry.Source.StartActivity("ConsultaService.Create");
+        activity?.SetTag("pet.id", dto.PetId);
+        activity?.SetTag("funcionario.id", dto.FuncionarioId);
+
         var pet = await _petRepository.GetByIdAsync(dto.PetId)
             ?? throw new BusinessException($"Pet associado com ID {dto.PetId} não encontrado.");
 
