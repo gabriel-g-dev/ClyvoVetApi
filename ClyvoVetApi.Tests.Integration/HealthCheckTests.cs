@@ -122,20 +122,4 @@ public class HealthCheckTests(IntegrationTestFixture fixture)
         Assert.True(report.TotalDurationMs >= 0);
         Assert.All(report.Checks, check => Assert.True(check.DurationMs >= 0));
     }
-
-    private class HealthReportResponse
-    {
-        public string Status { get; set; } = string.Empty;
-        public double TotalDurationMs { get; set; }
-        public string CorrelationId { get; set; } = string.Empty;
-        public List<HealthCheckEntry> Checks { get; set; } = [];
-    }
-
-    private class HealthCheckEntry
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
-        public double DurationMs { get; set; }
-        public List<string> Tags { get; set; } = [];
-    }
 }

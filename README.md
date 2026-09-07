@@ -27,8 +27,8 @@ A solution contém três projetos:
 
 ```
 ClyvoVetApi                      API
-ClyvoVetApi.Tests.Unit           127 testes — xUnit + Moq
-ClyvoVetApi.Tests.Integration     36 testes — WebApplicationFactory + SQLite in-memory
+ClyvoVetApi.Tests.Unit           131 testes — xUnit + Moq
+ClyvoVetApi.Tests.Integration     45 testes — WebApplicationFactory + SQLite in-memory
 ```
 
 ### Stack
@@ -170,6 +170,8 @@ Todos expõem CRUD completo — `GET` paginado, `GET /{id}`, `POST`, `PUT /{id}`
 
 Implementados com `Microsoft.Extensions.Diagnostics.HealthChecks`, separados por tag.
 
+A API não consome nenhum serviço externo — não há gateway de pagamento, fila, cache ou API de terceiros. A única dependência de infraestrutura é o banco Oracle, e é ela que o check de readiness verifica. Por isso não existe um terceiro health check registrado.
+
 | Endpoint | Verifica | Respostas |
 |---|---|---|
 | `GET /health/live` | Liveness. Processo ASP.NET Core de pé. Não toca o banco. | `200 Healthy` |
@@ -177,6 +179,10 @@ Implementados com `Microsoft.Extensions.Diagnostics.HealthChecks`, separados por
 | `GET /health` | Agregado dos dois checks. | `200` ou `503` |
 
 Liveness não depende do banco, para servir de sonda de reinício de container. Readiness valida a conexão: com o Oracle indisponível, `/health/ready` devolve 503 enquanto `/health/live` continua 200.
+
+O `OracleHealthCheck` usa um `CancellationTokenSource` linkado com limite de 5 segundos, para que uma queda de rede não deixe a sonda pendurada. Falhas de conexão, timeout e exceções inesperadas viram `Unhealthy` com descrição fixa — a connection string e o stack trace não chegam à resposta.
+
+Os dois cenários são cobertos por teste: `HealthCheckTests` exercita o banco disponível e `UnavailableDatabaseHealthCheckTests` sobe a aplicação apontando para um banco inacessível e confirma `503` em `/health/ready`, `200` em `/health/live` e a ausência de detalhes de conexão no corpo.
 
 Resposta:
 
@@ -205,6 +211,17 @@ E-mails são mascarados nos logs e nas mensagens de erro.
 
 OpenTelemetry com instrumentação ASP.NET Core e runtime, mais um `ActivitySource` próprio usado em `ConsultaService`, `VacinaService`, `IntelligenceService` e nos repositórios de consulta, pet e vacina.
 
+Os spans das camadas entram na mesma trace da requisição HTTP. Uma chamada a `GET /api/pets/{id}/inteligencia-preventiva` produz esta árvore, capturada com o Console exporter:
+
+```
+TraceId: bb32212f8de100f7aca8b30707065b94
+  GET api/Pets/{id:int}/inteligencia-preventiva     span=3c6c70bc37dbfa48  parent=(raiz)
+    IntelligenceService.GetIntelligencePreventiva    span=17e7067fd1f3dd6c  parent=3c6c70bc37dbfa48
+      PetRepository.GetById                          span=8a4e7016dfbf1487  parent=17e7067fd1f3dd6c
+```
+
+`TracingTests` verifica essa cadeia automaticamente: registra um `ActivityListener`, faz a requisição HTTP e confirma que Controller, Service e Repository compartilham o mesmo `TraceId` e que o encadeamento pai/filho está correto.
+
 Tempo de resposta vem de `http.server.request.duration`. Taxa de erros vem da métrica `clyvovet.http.errors`, dimensionada por método, status code e `error.kind` (client/server).
 
 Exportação por console ou OTLP, conforme as variáveis de ambiente. `docker-compose.observability.yml` sobe o Aspire Dashboard em `http://localhost:18888`.
@@ -219,18 +236,18 @@ export OpenTelemetry__OtlpEndpoint=http://localhost:4317
 ## Como rodar os testes
 
 ```bash
-dotnet test                                  # solution inteira — 163 testes
-dotnet test ClyvoVetApi.Tests.Unit           # 127 unitários
-dotnet test ClyvoVetApi.Tests.Integration    #  36 de integração
+dotnet test                                  # solution inteira — 176 testes
+dotnet test ClyvoVetApi.Tests.Unit           # 131 unitários
+dotnet test ClyvoVetApi.Tests.Integration    #  45 de integração
 ```
 
 Os testes não tocam o Oracle e não exigem nenhuma variável de ambiente.
 
-**Unitários.** xUnit com Moq nas dependências, padrão AAA e nomenclatura `MetodoTestado_Cenario_ResultadoEsperado`. Cobrem os oito Services (regras de negócio, validações, exceções de domínio e interações esperadas com os repositórios), o `AuthService` (credenciais válidas e inválidas, configuração ausente, expiração, issuer, audience e unicidade do jti) e o `SensitiveDataMasker`. `TestDataFixture` gera entidades com valores padrão coerentes e é consumida via `IClassFixture` por `PetServiceTests` e `VacinaServiceTests`; como não guarda estado mutável, os testes seguem isolados.
+**Unitários.** xUnit com Moq nas dependências, padrão AAA e nomenclatura `MetodoTestado_Cenario_ResultadoEsperado`. Cobrem os oito Services (regras de negócio, validações, exceções de domínio e interações esperadas com os repositórios), o `AuthService` (credenciais válidas e inválidas, configuração ausente, expiração, issuer, audience e unicidade do jti), o `OracleHealthCheck` (banco inalcançável, falha inesperada, ausência de connection string na resposta e limite de tempo) e o `SensitiveDataMasker`. `TestDataFixture` gera entidades com valores padrão coerentes e é consumida via `IClassFixture` por `PetServiceTests` e `VacinaServiceTests`; como não guarda estado mutável, os testes seguem isolados.
 
 **Integração.** `WebApplicationFactory<Program>` sobe a API real no ambiente `Testing`, com SQLite in-memory no lugar do Oracle — banco relacional de verdade, que aplica chaves estrangeiras e check constraints sem depender de Docker. `IntegrationTestFixture` concentra factory, conexão e seed; `IntegrationTestCollection` compartilha a fixture entre as classes via `ICollectionFixture` e garante execução sequencial. O banco é resetado a cada teste, o `AlertScheduler` não é registrado, e o logger do Serilog é substituído por um sem sinks para que a suíte não escreva em `logs/`.
 
-Cobertura: autenticação (login válido e inválido, token ausente, malformado, expirado e assinado com outra chave), fluxos HTTP (201 com header `Location` confirmado por GET subsequente, 200, 204), erros (400 de validação, 400 de regra de negócio, 404, 401, formato do ProblemDetails) e health checks (`/health/live`, `/health/ready` exercitando a conectividade com o banco, `/health` agregado, separação por tags e payload com durações e correlation ID).
+Cobertura: autenticação (login válido e inválido, token ausente, malformado, expirado e assinado com outra chave), fluxos HTTP (201 com header `Location` confirmado por GET subsequente, 200, 204), erros (400 de validação, 400 de regra de negócio, 404, 401, formato do ProblemDetails), health checks (`/health/live`, `/health/ready` exercitando a conectividade com o banco, `/health` agregado, separação por tags, payload com durações e correlation ID, e o cenário de banco indisponível devolvendo 503) e tracing (propagação de `TraceId` entre Controller, Service e Repository, tag de correlação no span e ausência de dado pessoal nas tags).
 
 ### Cobertura de código
 
@@ -248,9 +265,9 @@ Relatório por suíte em `<projeto>/TestResults/<guid>/coverage.cobertura.xml`. 
 | Middleware, Observability e Logging | 100% |
 | Auth | 100% |
 | Data | 93,7% |
+| HealthChecks | 85,4% |
 | Exceptions | 81,4% |
-| HealthChecks | 70,7% |
-| Global | 58,7% (72,5% sem as migrations) |
+| Global | 59,8% (73,9% sem as migrations) |
 
 O número global inclui Controllers e Repositories, exercitados apenas nos fluxos escolhidos para os testes de integração, além de `Program.cs` e das migrations.
 

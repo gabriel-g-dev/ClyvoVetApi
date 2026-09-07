@@ -53,9 +53,12 @@ public class ClyvoVetWebApplicationFactory : WebApplicationFactory<Program>
                 d => d.ServiceType == typeof(IDbContextOptionsConfiguration<AppDbContext>));
 
             services.Remove(oracleConfiguration);
-            services.AddDbContext<AppDbContext>(options => options.UseSqlite(_connection));
+            ConfigureDatabase(services);
         });
     }
+
+    protected virtual void ConfigureDatabase(IServiceCollection services) =>
+        services.AddDbContext<AppDbContext>(options => options.UseSqlite(_connection));
 
     private static Serilog.ILogger SilentLogger() =>
         new LoggerConfiguration().CreateLogger();
