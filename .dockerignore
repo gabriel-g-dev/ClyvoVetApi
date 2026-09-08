@@ -1,0 +1,22 @@
+# Artefatos de build da maquina local. O obj/ e o mais importante:
+# project.assets.json guarda caminhos absolutos do Windows e sobrescreveria
+# o resultado do dotnet restore feito dentro do container.
+**/bin/
+**/obj/
+
+**/TestResults/
+logs/
+
+.git/
+.gitignore
+.vs/
+.vscode/
+.idea/
+**/*.user
+
+# Segredos nunca entram na imagem. As variaveis sao injetadas em runtime.
+.env
+
+docker-compose.yml
+docker-compose.observability.yml
+Dockerfile
