@@ -99,7 +99,7 @@ Nenhum segredo é versionado. O `appsettings.json` não contém connection strin
 | `Auth__Audience` | Não | Audiência do token. Padrão `ClyvoVetApiClients`. |
 | `Auth__ExpirationMinutes` | Não | Validade do token. Padrão 60. |
 | `OpenTelemetry__OtlpEndpoint` | Não | Destino OTLP. Vazio desabilita a exportação. |
-| `OpenTelemetry__ConsoleExporter` | Não | `true` imprime traces e métricas no console. |
+| `OpenTelemetry__ConsoleExporter` | Não | `true` imprime traces e métricas no console. Já vem `true` em Development. |
 | `ASPNETCORE_ENVIRONMENT` | Não | `Development`, `Production` ou `Testing`. |
 
 Comportamento quando ausentes:
@@ -224,10 +224,10 @@ TraceId: bb32212f8de100f7aca8b30707065b94
 
 Tempo de resposta vem de `http.server.request.duration`. Taxa de erros vem da métrica `clyvovet.http.errors`, dimensionada por método, status code e `error.kind` (client/server).
 
-Exportação por console ou OTLP, conforme as variáveis de ambiente. `docker-compose.observability.yml` sobe o Aspire Dashboard em `http://localhost:18888`.
+Em Development o Console exporter já vem habilitado por `appsettings.Development.json`: basta `dotnet run` e a primeira requisição imprime spans e métricas no console, sem definir nenhuma variável de ambiente. Em Production ele permanece desligado, e a exportação é escolhida pelas variáveis abaixo. `docker-compose.observability.yml` sobe o Aspire Dashboard em `http://localhost:18888`.
 
 ```bash
-export OpenTelemetry__ConsoleExporter=true      # inspeção local
+export OpenTelemetry__ConsoleExporter=true      # fora de Development; em Development já é o padrão
 export OpenTelemetry__OtlpEndpoint=http://localhost:4317
 ```
 
