@@ -1,4 +1,5 @@
 using ClyvoVetApi.Data;
+using ClyvoVetApi.Repositories.Interfaces;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
@@ -8,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Serilog;
 
 namespace ClyvoVetApi.Tests.Integration;
@@ -43,6 +45,16 @@ public class ClyvoVetWebApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
+            // Esta suíte usa SQLite e um substituto documental; o Mongo real tem uma suíte própria.
+            services.RemoveAll<IEvolucaoClinicaRepository>();
+            services.AddSingleton<IEvolucaoClinicaRepository, InMemoryEvolucaoClinicaRepository>();
+            services.PostConfigure<HealthCheckServiceOptions>(options =>
+            {
+                var mongo = options.Registrations.FirstOrDefault(registration => registration.Name == "mongo");
+                if (mongo is not null)
+                    options.Registrations.Remove(mongo);
+            });
+
             services.RemoveAll<ILoggerFactory>();
             services.AddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
 

@@ -1,0 +1,386 @@
+{
+    "auditDate":  "2026-10-26",
+    "scope":  "Ultima revisao local da Sprint 4; nao constitui publicacao ou nota atribuida.",
+    "source":  {
+                   "baseHead":  "83b6dd76b55e471d5f5344f60a80f3617f3f9928",
+                   "compiledSourceSha256":  "6352fb2805d4061f641fc65075ba352208d1bb67cf4554b1e61c325030657aa6",
+                   "compiledSourceFiles":  160,
+                   "unchangedAfterTests":  true
+               },
+    "cleanInstallation":  {
+                              "method":  "Exportacao dos arquivos versionaveis, incluindo novos ainda nao rastreados; nao e clone remoto da Sprint 4 nao commitada.",
+                              "sourceFilesAtExport":  182,
+                              "excluded":  [
+                                               ".git",
+                                               ".env",
+                                               "bin",
+                                               "obj",
+                                               "logs",
+                                               "artifacts"
+                                           ],
+                              "freshNuGetPackagesDirectory":  true,
+                              "restoreNoCache":  true,
+                              "sdk":  "9.0.317",
+                              "nativeAspNetRuntime":  "9.0.19",
+                              "restore":  "passed",
+                              "efToolRestore":  "passed",
+                              "efToolVersion":  "9.0.4",
+                              "debugBuild":  {
+                                                 "result":  "passed",
+                                                 "warnings":  0,
+                                                 "errors":  0
+                                             },
+                              "releaseBuild":  {
+                                                   "result":  "passed",
+                                                   "warnings":  0,
+                                                   "errors":  0
+                                               },
+                              "releasePublish":  "passed"
+                          },
+    "testRuns":  [
+                     {
+                         "configuration":  "debug",
+                         "total":  438,
+                         "passed":  438,
+                         "failed":  0,
+                         "skipped":  0,
+                         "suites":  [
+                                        {
+                                            "suite":  "unit",
+                                            "total":  197,
+                                            "passed":  197,
+                                            "failed":  0,
+                                            "skipped":  0,
+                                            "trxSha256":  "bbf1cd1fbcf49b86d0ad0730914b78e39dfa20f3b8787b82ed99e35a4c6211c6"
+                                        },
+                                        {
+                                            "suite":  "integration",
+                                            "total":  241,
+                                            "passed":  241,
+                                            "failed":  0,
+                                            "skipped":  0,
+                                            "trxSha256":  "a712855e7b776d411b3f9932a9835d2480c64c2c98fd6b25c0fd97b278a5a8e5"
+                                        }
+                                    ]
+                     },
+                     {
+                         "configuration":  "release",
+                         "total":  438,
+                         "passed":  438,
+                         "failed":  0,
+                         "skipped":  0,
+                         "suites":  [
+                                        {
+                                            "suite":  "unit",
+                                            "total":  197,
+                                            "passed":  197,
+                                            "failed":  0,
+                                            "skipped":  0,
+                                            "trxSha256":  "ce16bb4d3fa63ea15e182c0c67c14fc86cd5356c7f78541391c7030bd3c7791a"
+                                        },
+                                        {
+                                            "suite":  "integration",
+                                            "total":  241,
+                                            "passed":  241,
+                                            "failed":  0,
+                                            "skipped":  0,
+                                            "trxSha256":  "0776bc482cd133b9b4856e8451f671fd9344f78df2458019026f971e24789efb"
+                                        }
+                                    ]
+                     }
+                 ],
+    "realDatabaseTests":  [
+                              {
+                                  "configuration":  "debug",
+                                  "test":  "ClyvoVetApi.Tests.Integration.MongoRealTests.HealthCheck_WhenMongoResponds_ReturnsHealthy",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "debug",
+                                  "test":  "ClyvoVetApi.Tests.Integration.MongoRealTests.Repository_WhenDocumentIsInserted_ReadsItFromRealMongoWithPetScope",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "debug",
+                                  "test":  "ClyvoVetApi.Tests.Integration.MongoRealTests.Repository_WhenContextIsRecreated_ReadsTheCompletePersistedDocument",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "debug",
+                                  "test":  "ClyvoVetApi.Tests.Integration.MongoRealTests.Http_WhenEvolutionIsCreated_PersistsAndQueriesRealMongo",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "debug",
+                                  "test":  "ClyvoVetApi.Tests.Integration.MongoRealTests.Repository_WhenTimestampsTie_UsesIdAsStableTieBreakerInBothDirections",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "debug",
+                                  "test":  "ClyvoVetApi.Tests.Integration.MongoRealTests.Repository_WhenUsed_CreatesTheDeclaredCompoundIndexInMongo",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "debug",
+                                  "test":  "ClyvoVetApi.Tests.Integration.OraclePersistenceTests.Migrations_ApplyToOracleAndPersistTheClinicalGraphWithConstraints",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "debug",
+                                  "test":  "ClyvoVetApi.Tests.Integration.MongoRealTests.Repository_WhenFiltered_ReturnsStableOrderedPagesAndCorrectTotal",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "release",
+                                  "test":  "ClyvoVetApi.Tests.Integration.MongoRealTests.Repository_WhenFiltered_ReturnsStableOrderedPagesAndCorrectTotal",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "release",
+                                  "test":  "ClyvoVetApi.Tests.Integration.MongoRealTests.HealthCheck_WhenMongoResponds_ReturnsHealthy",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "release",
+                                  "test":  "ClyvoVetApi.Tests.Integration.MongoRealTests.Repository_WhenTimestampsTie_UsesIdAsStableTieBreakerInBothDirections",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "release",
+                                  "test":  "ClyvoVetApi.Tests.Integration.MongoRealTests.Http_WhenEvolutionIsCreated_PersistsAndQueriesRealMongo",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "release",
+                                  "test":  "ClyvoVetApi.Tests.Integration.MongoRealTests.Repository_WhenContextIsRecreated_ReadsTheCompletePersistedDocument",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "release",
+                                  "test":  "ClyvoVetApi.Tests.Integration.OraclePersistenceTests.Migrations_ApplyToOracleAndPersistTheClinicalGraphWithConstraints",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "release",
+                                  "test":  "ClyvoVetApi.Tests.Integration.MongoRealTests.Repository_WhenDocumentIsInserted_ReadsItFromRealMongoWithPetScope",
+                                  "outcome":  "Passed"
+                              },
+                              {
+                                  "configuration":  "release",
+                                  "test":  "ClyvoVetApi.Tests.Integration.MongoRealTests.Repository_WhenUsed_CreatesTheDeclaredCompoundIndexInMongo",
+                                  "outcome":  "Passed"
+                              }
+                          ],
+    "oracle":  {
+                   "serverVersion":  "21.3.0.0.0",
+                   "newDisposableSchema":  true,
+                   "migration":  "20261025155040_OracleBaseline",
+                   "firstCliApplication":  "applied",
+                   "secondCliApplication":  "already up to date; no migrations applied",
+                   "pendingModelChanges":  false,
+                   "graphConstraintDecimalOrderAndPaginationTest":  "passed"
+               },
+    "mongo":  {
+                  "serverVersion":  "8.0.34",
+                  "disposable":  true,
+                  "realTestsPerConfiguration":  7,
+                  "writeReadFiltersIndexUtcRoundTripAndHttp":  "passed"
+              },
+    "nativeHttp":  {
+                       "requests":  90,
+                       "statusCounts":  {
+                                            "200":  45,
+                                            "201":  11,
+                                            "204":  9,
+                                            "400":  7,
+                                            "401":  7,
+                                            "403":  1,
+                                            "404":  10
+                                        },
+                       "assertions":  333,
+                       "allAssertionsPassed":  true,
+                       "aspNetEnvironment":  "Testing",
+                       "relationalAndDocumentDatabases":  "real",
+                       "openApiPaths":  34,
+                       "unresolvedLocalOpenApiReferences":  0,
+                       "reportSha256":  "8312a08a55808889a2042aa78e382ebe11a05308f4573ce176c06a7916c52f0a"
+                   },
+    "coverage":  {
+                     "method":  "Uniao de linhas por arquivo; XML duplicados removidos por hash; nao soma branches.",
+                     "uniqueCoberturaReports":  2,
+                     "sourceReportSha256":  [
+                                                "b6680910c37a31c6e04466f4750adb655ee14702ef72d1e829c91ed58725db46",
+                                                "f5b9730b4229a60979b700af5cfcbd1cd854f0cd17b93f999d7079b2c9636094"
+                                            ],
+                     "assemblies":  [
+                                        {
+                                            "assembly":  "ClyvoVetApi",
+                                            "coveredLines":  797,
+                                            "instrumentedLines":  922,
+                                            "linePercent":  86.44
+                                        },
+                                        {
+                                            "assembly":  "ClyvoVetApi.Application",
+                                            "coveredLines":  854,
+                                            "instrumentedLines":  857,
+                                            "linePercent":  99.65
+                                        },
+                                        {
+                                            "assembly":  "ClyvoVetApi.Domain",
+                                            "coveredLines":  150,
+                                            "instrumentedLines":  150,
+                                            "linePercent":  100.0
+                                        },
+                                        {
+                                            "assembly":  "ClyvoVetApi.Infrastructure",
+                                            "coveredLines":  1536,
+                                            "instrumentedLines":  1624,
+                                            "linePercent":  94.58
+                                        }
+                                    ]
+                 },
+    "packages":  {
+                     "source":  "https://api.nuget.org/v3/index.json",
+                     "includeTransitive":  true,
+                     "projects":  6,
+                     "knownAdvisories":  0,
+                     "reportSha256":  "f75e6a71ee75b829c0435f62e6d9a462e640da6a5d85b9f08e3d3ef9801ee530"
+                 },
+    "dockerCompose":  {
+                          "latestDatabaseEnvironment":  {
+                                                            "dockerServer":  "29.9.2",
+                                                            "compose":  "5.6.0",
+                                                            "composeSha256":  "40343e21ca777173e69cff5dbafeb37c6f81f3b0d57d9e597f036e95eb63e76a",
+                                                            "composeChecksumVerified":  true,
+                                                            "principalConfig":  true,
+                                                            "testsConfig":  true,
+                                                            "observabilityConfig":  true,
+                                                            "privateOverrideConfig":  true,
+                                                            "hostNetworkUsed":  false,
+                                                            "hostFirewallOrSysctlChanged":  false,
+                                                            "schemaAppliedBySetup":  false,
+                                                            "bridgeLimitation":  "Temporary daemon has iptables/forwarding disabled; database runtime uses only a shared private container namespace.",
+                                                            "containers":  [
+                                                                               {
+                                                                                   "id":  "a67b12e7b10b",
+                                                                                   "name":  "clyvovet-audit3-mongo-test-1",
+                                                                                   "service":  "mongo-test",
+                                                                                   "project":  "clyvovet-audit3",
+                                                                                   "ownershipLabel":  "true",
+                                                                                   "state":  "running",
+                                                                                   "health":  "healthy",
+                                                                                   "image":  "mongo:8.0",
+                                                                                   "imageId":  "sha256:09f940d01e0c09abbfd246a2b10965cbf86a87c9c1dad86b374f925a084976c8",
+                                                                                   "imageDigests":  [
+                                                                                                        "mongo@sha256:4a4ab5d4834207389e0d7270fac988e21ffedccecba77991a552f755df229907"
+                                                                                                    ],
+                                                                                   "networkMode":  "container:4d8365e1ed92274d3717bc5c885fc55b762db4f99cc0949620d53df023795036",
+                                                                                   "ports":  {
+
+                                                                                             },
+                                                                                   "serverVersion":  "8.0.34",
+                                                                                   "ping":  1
+                                                                               },
+                                                                               {
+                                                                                   "id":  "4d8365e1ed92",
+                                                                                   "name":  "clyvovet-audit3-oracle-test-1",
+                                                                                   "service":  "oracle-test",
+                                                                                   "project":  "clyvovet-audit3",
+                                                                                   "ownershipLabel":  "true",
+                                                                                   "state":  "running",
+                                                                                   "health":  "healthy",
+                                                                                   "image":  "gvenzl/oracle-xe:21-slim",
+                                                                                   "imageId":  "sha256:523f7afc7a05b1ddd4420d4de72f96024c58545d5946202b42d6d616c3c4b475",
+                                                                                   "imageDigests":  [
+                                                                                                        "gvenzl/oracle-xe@sha256:ecdf4302ac3d134e1bac5ef6e0c223c2d0f4d4d2b6d551aa79b2346f1ab8f792"
+                                                                                                    ],
+                                                                                   "networkMode":  "clyvovet-audit3_default",
+                                                                                   "ports":  {
+                                                                                                 "1521/tcp":  [
+                                                                                                                  {
+                                                                                                                      "HostIp":  "127.0.0.1",
+                                                                                                                      "HostPort":  "11521"
+                                                                                                                  }
+                                                                                                              ],
+                                                                                                 "27017/tcp":  [
+                                                                                                                   {
+                                                                                                                       "HostIp":  "127.0.0.1",
+                                                                                                                       "HostPort":  "27029"
+                                                                                                                   }
+                                                                                                               ]
+                                                                                             },
+                                                                                   "serverVersion":  "21.3.0.0.0"
+                                                                               }
+                                                                           ]
+                                                        },
+                          "historicalApiImageRuntime":  {
+                                                            "date":  "2026-10-25",
+                                                            "image":  "sha256:decae6ce566ff1320bf7349ad6d802ec4614ef07ea7601acdcc28d776fc3e949",
+                                                            "build":  "passed",
+                                                            "nonRootUid":  1654,
+                                                            "liveReadyOpenApi":  200,
+                                                            "anonymousClinicalGet":  401,
+                                                            "apiRestart":  "passed",
+                                                            "network":  "shared private namespace of only the three new containers"
+                                                        },
+                          "standardBridgeRuntime":  "pending: isolated daemon forwarding/iptables disabled"
+                      },
+    "compatibility":  {
+                          "previousHttpActions":  53,
+                          "preservedHttpMethodsAndRouteTemplates":  53,
+                          "addedClinicalEvolutionActions":  3,
+                          "originalDatabaseScriptsUnchanged":  true
+                      },
+    "cleanup":  {
+                    "reviewDate":  "2026-10-26",
+                    "project":  "clyvovet-audit3",
+                    "ownedEnginePath":  "/var/tmp/clyvovet-audit3-docker",
+                    "exactRealPathVerified":  true,
+                    "ownershipMarkerVerified":  true,
+                    "containersBefore":  [
+                                             {
+                                                 "id":  "a67b12e7b10b",
+                                                 "name":  "clyvovet-audit3-mongo-test-1",
+                                                 "service":  "mongo-test",
+                                                 "ownershipLabelVerified":  true
+                                             },
+                                             {
+                                                 "id":  "4d8365e1ed92",
+                                                 "name":  "clyvovet-audit3-oracle-test-1",
+                                                 "service":  "oracle-test",
+                                                 "ownershipLabelVerified":  true
+                                             }
+                                         ],
+                    "ownedVolumeCountBefore":  2,
+                    "remainingOwnedContainers":  0,
+                    "remainingOwnedVolumes":  0,
+                    "ownedEngineProcessesAbsent":  true,
+                    "directoryRemoved":  true,
+                    "privateCredentialFilesRemoved":  true,
+                    "firewallOrSysctlChanged":  false,
+                    "hostNetworkUsed":  false,
+                    "existingWslDistroPreserved":  true,
+                    "sharedDatabasesAccessed":  false,
+                    "sanitizedEnvironmentEvidencePreserved":  true
+                },
+    "reviewLimits":  [
+                         "Slides originais indisponiveis; transcricao de requisitos e penalidades conferida.",
+                         "Rede bridge padrao exige validacao com Andre.",
+                         "Adocao de baseline em schema existente exige backup, inspecao e decisao do responsavel.",
+                         "Cobertura de linhas e zero advisories conhecidos nao sao garantia de ausencia de falhas."
+                     ],
+    "commitPushDeployPerformed":  false,
+    "deliveryReview":  {
+                           "date":  "2026-10-26",
+                           "deliverableFilesChecked":  184,
+                           "trackedAndNewWhitespaceChecks":  "passed",
+                           "utf8AndRelativeMarkdownLinks":  "passed",
+                           "knownSecretPatternFindings":  0,
+                           "sourceChangesAfterFinalTests":  0,
+                           "originalDatabaseScriptsUnchanged":  true,
+                           "headUnchanged":  true,
+                           "stagedFiles":  [
+
+                                           ]
+                       }
+}

@@ -3,6 +3,9 @@ WORKDIR /src
 
 # Copy csproj and restore dependencies to optimize Docker layer caching
 COPY ["ClyvoVetApi.csproj", "./"]
+COPY ["src/ClyvoVetApi.Domain/ClyvoVetApi.Domain.csproj", "src/ClyvoVetApi.Domain/"]
+COPY ["src/ClyvoVetApi.Application/ClyvoVetApi.Application.csproj", "src/ClyvoVetApi.Application/"]
+COPY ["src/ClyvoVetApi.Infrastructure/ClyvoVetApi.Infrastructure.csproj", "src/ClyvoVetApi.Infrastructure/"]
 RUN dotnet restore "ClyvoVetApi.csproj"
 
 # Copy the remaining files and build

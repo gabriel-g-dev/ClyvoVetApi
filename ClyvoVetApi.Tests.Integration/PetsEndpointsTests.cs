@@ -14,7 +14,7 @@ public class PetsEndpointsTests(IntegrationTestFixture fixture)
     public async Task GetPets_WhenCalled_ReturnsPagedList()
     {
         _fixture.ResetDatabase();
-        var client = _fixture.CreateClient();
+        var client = await _fixture.CreateAuthenticatedClientAsync();
 
         var response = await client.GetAsync("/api/pets?page=1&pageSize=10");
 
@@ -30,7 +30,7 @@ public class PetsEndpointsTests(IntegrationTestFixture fixture)
     public async Task GetPet_WhenPetExists_ReturnsPetWithHistory()
     {
         var seed = _fixture.ResetDatabase();
-        var client = _fixture.CreateClient();
+        var client = await _fixture.CreateAuthenticatedClientAsync();
 
         var response = await client.GetAsync($"/api/pets/{seed.PetId}");
 
@@ -48,7 +48,7 @@ public class PetsEndpointsTests(IntegrationTestFixture fixture)
     public async Task GetPet_WhenPetDoesNotExist_ReturnsNotFoundProblemDetails()
     {
         _fixture.ResetDatabase();
-        var client = _fixture.CreateClient();
+        var client = await _fixture.CreateAuthenticatedClientAsync();
 
         var response = await client.GetAsync("/api/pets/9999");
 
@@ -184,7 +184,7 @@ public class PetsEndpointsTests(IntegrationTestFixture fixture)
     public async Task GetIntelligencePreventiva_WhenPetExists_ReturnsScore()
     {
         var seed = _fixture.ResetDatabase();
-        var client = _fixture.CreateClient();
+        var client = await _fixture.CreateAuthenticatedClientAsync();
 
         var response = await client.GetAsync($"/api/pets/{seed.PetId}/inteligencia-preventiva");
 

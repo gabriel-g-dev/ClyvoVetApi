@@ -1,0 +1,25 @@
+services:
+  oracle-test:
+    image: gvenzl/oracle-xe:21-slim
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_TEST_PASSWORD:?defina ORACLE_TEST_PASSWORD para o banco descartavel}
+      APP_USER: clyvovet_test
+      APP_USER_PASSWORD: ${ORACLE_TEST_PASSWORD:?defina ORACLE_TEST_PASSWORD para o banco descartavel}
+    ports:
+      - "127.0.0.1:11521:1521"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  mongo-test:
+    image: mongo:8.0
+    ports:
+      - "127.0.0.1:27029:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "quit(db.adminCommand('ping').ok ? 0 : 1)"]
+      interval: 5s
+      timeout: 5s
+      retries: 15

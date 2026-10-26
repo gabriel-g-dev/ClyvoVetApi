@@ -25,6 +25,19 @@ public class SpanCollector : IDisposable
     public Activity Single(string displayName) =>
         Assert.Single(Spans, span => span.DisplayName == displayName);
 
+    public Activity Single(string displayName, ActivityTraceId traceId) =>
+        Assert.Single(Spans, span => span.DisplayName == displayName && span.TraceId == traceId);
+
+    public async Task<Activity> WaitForAsync(string displayName)
+    {
+        // TestServer pode entregar a resposta antes do callback ActivityStopped da requisição.
+        var timeout = Stopwatch.StartNew();
+        while (!Spans.Any(span => span.DisplayName == displayName) && timeout.Elapsed < TimeSpan.FromSeconds(3))
+            await Task.Delay(10);
+
+        return Single(displayName);
+    }
+
     public void Dispose()
     {
         _listener.Dispose();

@@ -7,7 +7,6 @@ namespace ClyvoVetApi.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-[Produces("application/json")]
 public class AuthController(IAuthService service, ILogger<AuthController> logger) : ControllerBase
 {
     private readonly IAuthService _service = service;
@@ -23,16 +22,12 @@ public class AuthController(IAuthService service, ILogger<AuthController> logger
 
         if (result == null)
         {
-            _logger.LogWarning("Tentativa de login rejeitada para o usuário {Username}.", dto.Username);
-            return Unauthorized(new ProblemDetails
-            {
-                Status = StatusCodes.Status401Unauthorized,
-                Title = "Credenciais inválidas",
-                Detail = "Usuário ou senha incorretos."
-            });
+            _logger.LogWarning("Tentativa de login rejeitada.");
+            return Problem(statusCode: StatusCodes.Status401Unauthorized,
+                title: "Credenciais inválidas", detail: "Usuário ou senha incorretos.");
         }
 
-        _logger.LogInformation("Login realizado com sucesso para o usuário {Username}.", dto.Username);
+        _logger.LogInformation("Login realizado com sucesso.");
         return Ok(result);
     }
 }

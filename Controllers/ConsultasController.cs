@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.ComponentModel.DataAnnotations;
 using ClyvoVetApi.DTOs.Request;
 using ClyvoVetApi.DTOs.Response;
 using ClyvoVetApi.Services.Interfaces;
@@ -7,19 +9,23 @@ using Microsoft.AspNetCore.Mvc;
 namespace ClyvoVetApi.Controllers;
 
 [ApiController]
+[Authorize(Policy = "ClinicalAccess")]
+[ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(ProblemDetails))]
+[ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ProblemDetails))]
 [Route("api/[controller]")]
-[Produces("application/json")]
 public class ConsultasController(IConsultaService service) : ControllerBase
 {
     private readonly IConsultaService _service = service;
 
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponseDto<ConsultaResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> GetConsultas(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10)
+        [FromQuery, Range(1, 1_000_000)] int page = 1,
+        [FromQuery, Range(1, 100)] int pageSize = 10,
+        [FromQuery] ListQueryOptions? query = null)
     {
-        var result = await _service.GetAllAsync(page, pageSize);
+        var result = await _service.GetAllAsync(page, pageSize, query ?? new ListQueryOptions());
         return Ok(result);
     }
 
@@ -44,14 +50,13 @@ public class ConsultasController(IConsultaService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<ConsultaResponseDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> GetConsultasByPeriodo(
-        [FromQuery] DateTime inicio,
-        [FromQuery] DateTime fim)
+        [FromQuery, BindRequired] DateTime inicio,
+        [FromQuery, BindRequired] DateTime fim)
     {
         var result = await _service.GetByPeriodoAsync(inicio, fim);
         return Ok(result);
     }
 
-    [Authorize]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ConsultaResponseDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
@@ -61,7 +66,6 @@ public class ConsultasController(IConsultaService service) : ControllerBase
         return CreatedAtAction(nameof(GetConsulta), new { id = result.Id }, result);
     }
 
-    [Authorize]
     [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ConsultaResponseDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
@@ -72,7 +76,6 @@ public class ConsultasController(IConsultaService service) : ControllerBase
         return Ok(result);
     }
 
-    [Authorize]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]

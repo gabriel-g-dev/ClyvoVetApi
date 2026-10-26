@@ -104,7 +104,7 @@ public class ConsultasEndpointsTests(IntegrationTestFixture fixture)
     public async Task GetConsultaByPeriodo_WhenStartIsAfterEnd_ReturnsBusinessError()
     {
         _fixture.ResetDatabase();
-        var client = _fixture.CreateClient();
+        var client = await _fixture.CreateAuthenticatedClientAsync();
 
         var inicio = DateTime.Today.AddDays(10).ToString("yyyy-MM-dd");
         var fim = DateTime.Today.ToString("yyyy-MM-dd");
@@ -122,7 +122,7 @@ public class ConsultasEndpointsTests(IntegrationTestFixture fixture)
     public async Task GetConsulta_WhenConsultaDoesNotExist_ReturnsNotFound()
     {
         _fixture.ResetDatabase();
-        var client = _fixture.CreateClient();
+        var client = await _fixture.CreateAuthenticatedClientAsync();
 
         var response = await client.GetAsync("/api/consultas/9999");
 

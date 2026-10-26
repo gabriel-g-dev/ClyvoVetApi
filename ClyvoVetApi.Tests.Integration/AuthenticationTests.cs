@@ -17,6 +17,25 @@ public class AuthenticationTests(IntegrationTestFixture fixture)
     private readonly IntegrationTestFixture _fixture = fixture;
 
     [Fact]
+    public async Task Login_WhenRejected_ReturnsProblemWithRequestCorrelation()
+    {
+        var client = _fixture.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Correlation-Id", "login-rejeitado-sprint4");
+
+        var response = await client.PostAsJsonAsync("/api/auth/login", new LoginRequestDto
+        {
+            Username = ClyvoVetWebApplicationFactory.Username,
+            Password = "credencial-incorreta"
+        });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetailsResponse>();
+        Assert.Equal("login-rejeitado-sprint4", problem!.TraceId);
+        Assert.Equal(problem.TraceId, response.Headers.GetValues("X-Correlation-Id").Single());
+    }
+
+    [Fact]
     public async Task Login_WhenCredentialsAreValid_ReturnsToken()
     {
         var client = _fixture.CreateClient();
@@ -151,14 +170,14 @@ public class AuthenticationTests(IntegrationTestFixture fixture)
     }
 
     [Fact]
-    public async Task GetPets_WhenTokenIsMissing_RemainsPublic()
+    public async Task GetPets_WhenTokenIsMissing_ReturnsUnauthorized()
     {
         _fixture.ResetDatabase();
         var client = _fixture.CreateClient();
 
         var response = await client.GetAsync("/api/pets");
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     private static object NovoPet(int donoId) => new

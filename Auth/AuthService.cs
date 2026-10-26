@@ -26,7 +26,8 @@ public class AuthService(AuthOptions options) : IAuthService
             claims:
             [
                 new Claim(JwtRegisteredClaimNames.Sub, request.Username),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim("scope", "clinical")
             ],
             expires: expiresAt,
             signingCredentials: new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256));

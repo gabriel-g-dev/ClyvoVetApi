@@ -12,7 +12,8 @@ public class OracleHealthCheckTests
     private const string ConexaoInvalida = "Data Source=;User Id=;Password=";
 
     private static AppDbContext NovoContexto() =>
-        new(new DbContextOptionsBuilder<AppDbContext>().UseOracle(ConexaoInvalida).Options);
+        new(new DbContextOptionsBuilder<AppDbContext>().UseOracle(ConexaoInvalida, oracle =>
+            oracle.UseOracleSQLCompatibility(OracleSQLCompatibility.DatabaseVersion21)).Options);
 
     private static OracleHealthCheck NovoCheck(AppDbContext contexto) =>
         new(contexto, NullLogger<OracleHealthCheck>.Instance);

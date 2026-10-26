@@ -20,6 +20,28 @@ public class UnavailableDatabaseHealthCheckTests : IDisposable
     private readonly UnavailableDatabaseFactory _factory = new();
 
     [Fact]
+    public async Task GetPets_WhenDatabaseThrowsUnexpectedException_ReturnsSanitizedCorrelatedProblem()
+    {
+        var client = _factory.CreateClient();
+        var token = await IntegrationTestFixture.GetAccessTokenAsync(client);
+        client.DefaultRequestHeaders.Authorization = new("Bearer", token);
+        client.DefaultRequestHeaders.Add("X-Correlation-Id", "falha-persistencia-sprint4");
+
+        var response = await client.GetAsync("/api/pets");
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetailsResponse>();
+        Assert.Equal("Erro interno do servidor", problem!.Title);
+        Assert.Equal("falha-persistencia-sprint4", problem.TraceId);
+        Assert.Equal(problem.TraceId, response.Headers.GetValues("X-Correlation-Id").Single());
+        Assert.DoesNotContain("pasta-que-nao-existe", body);
+        Assert.DoesNotContain("SqliteException", body);
+        Assert.DoesNotContain("DataSource", body);
+    }
+
+    [Fact]
     public async Task GetHealthReady_WhenDatabaseIsUnreachable_ReturnsServiceUnavailable()
     {
         var client = _factory.CreateClient();

@@ -5,15 +5,25 @@ namespace ClyvoVetApi.Logging;
 public static class SensitiveDataMasker
 {
     private static readonly Regex EmailPattern =
-        new(@"[\w\.\-\+]+@[\w\.\-]+\.\w+", RegexOptions.Compiled);
+        new(@"[\w.\-+%]+(?:@|%40)[\w.\-%]+\.\w+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private static readonly Regex CredentialPattern = new(
+        @"\b(password|pwd|signingkey|access_token|accesstoken|authorization)\s*[:=]\s*[^;\r\n,]+",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private static readonly Regex QueryParameterPattern = new(
+        @"(?<=[?&])([A-Za-z0-9_.-]+)=[^&#\s]*", RegexOptions.Compiled);
 
     public static string MaskEmails(string? text)
     {
         if (string.IsNullOrEmpty(text))
             return string.Empty;
 
-        return EmailPattern.Replace(text, match => Mask(match.Value));
+        return EmailPattern.Replace(text, match => Mask(Uri.UnescapeDataString(match.Value)));
     }
+
+    public static string MaskSensitiveText(string? text) =>
+        QueryParameterPattern.Replace(CredentialPattern.Replace(MaskEmails(text), "$1=[redacted]"), "$1=[redacted]");
 
     private static string Mask(string email)
     {

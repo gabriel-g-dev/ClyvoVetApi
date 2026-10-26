@@ -53,4 +53,13 @@ public class SensitiveDataMaskerTests
 
         Assert.Equal(string.Empty, resultado);
     }
+
+    [Fact]
+    public void MaskEmails_WhenRouteContainsAnEncodedEmail_DoesNotRetainTheAddress()
+    {
+        var result = SensitiveDataMasker.MaskEmails("/api/tutores/email/private.audit%2Btag%40example.test");
+
+        Assert.Equal("/api/tutores/email/p***@***.test", result);
+        Assert.DoesNotContain("private.audit", result);
+    }
 }

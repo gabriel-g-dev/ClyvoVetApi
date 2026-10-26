@@ -19,6 +19,7 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
         {
             NotFoundException => (StatusCodes.Status404NotFound, "Recurso não encontrado", exception.Message),
             BusinessException => (StatusCodes.Status400BadRequest, "Violação de regra de negócio", exception.Message),
+            DependencyUnavailableException => (StatusCodes.Status503ServiceUnavailable, "Dependência indisponível", exception.Message),
             _ => (StatusCodes.Status500InternalServerError, "Erro interno do servidor", "Ocorreu um erro inesperado. Por favor, tente novamente mais tarde.")
         };
 
@@ -57,7 +58,8 @@ public class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IE
         problemDetails.Extensions["traceId"] = correlationId;
 
         context.Response.StatusCode = statusCode;
-        await context.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+        await context.Response.WriteAsJsonAsync(problemDetails, options: null,
+            contentType: "application/problem+json", cancellationToken: cancellationToken);
         return true;
     }
 }

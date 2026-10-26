@@ -12,9 +12,11 @@ public class TracingTests(IntegrationTestFixture fixture)
     {
         var seed = _fixture.ResetDatabase();
         using var collector = new SpanCollector();
-        var client = _fixture.CreateClient();
+        var client = await _fixture.CreateAuthenticatedClientAsync();
 
         await client.GetAsync($"/api/pets/{seed.PetId}/inteligencia-preventiva");
+
+        await collector.WaitForAsync("GET api/Pets/{id:int}/inteligencia-preventiva");
 
         Assert.Contains(collector.Spans, span => span.DisplayName == "IntelligenceService.GetIntelligencePreventiva");
         Assert.Contains(collector.Spans, span => span.DisplayName == "PetRepository.GetById");
@@ -25,13 +27,13 @@ public class TracingTests(IntegrationTestFixture fixture)
     {
         var seed = _fixture.ResetDatabase();
         using var collector = new SpanCollector();
-        var client = _fixture.CreateClient();
+        var client = await _fixture.CreateAuthenticatedClientAsync();
 
         await client.GetAsync($"/api/pets/{seed.PetId}/inteligencia-preventiva");
 
-        var request = collector.Single("GET api/Pets/{id:int}/inteligencia-preventiva");
-        var service = collector.Single("IntelligenceService.GetIntelligencePreventiva");
-        var repository = collector.Single("PetRepository.GetById");
+        var request = await collector.WaitForAsync("GET api/Pets/{id:int}/inteligencia-preventiva");
+        var service = collector.Single("IntelligenceService.GetIntelligencePreventiva", request.TraceId);
+        var repository = collector.Single("PetRepository.GetById", request.TraceId);
 
         Assert.Equal(request.TraceId, service.TraceId);
         Assert.Equal(request.TraceId, repository.TraceId);
@@ -44,7 +46,7 @@ public class TracingTests(IntegrationTestFixture fixture)
     {
         _fixture.ResetDatabase();
         using var collector = new SpanCollector();
-        var client = _fixture.CreateClient();
+        var client = await _fixture.CreateAuthenticatedClientAsync();
 
         await client.GetAsync("/api/vacinas/pendentes");
 
@@ -60,12 +62,12 @@ public class TracingTests(IntegrationTestFixture fixture)
     {
         var seed = _fixture.ResetDatabase();
         using var collector = new SpanCollector();
-        var client = _fixture.CreateClient();
+        var client = await _fixture.CreateAuthenticatedClientAsync();
         client.DefaultRequestHeaders.Add("X-Correlation-Id", "trace-com-correlacao");
 
         await client.GetAsync($"/api/pets/{seed.PetId}");
 
-        var request = collector.Single("GET api/Pets/{id:int}");
+        var request = await collector.WaitForAsync("GET api/Pets/{id:int}");
         Assert.Equal("trace-com-correlacao", request.GetTagItem("clyvovet.correlation_id"));
     }
 
@@ -74,9 +76,11 @@ public class TracingTests(IntegrationTestFixture fixture)
     {
         var seed = _fixture.ResetDatabase();
         using var collector = new SpanCollector();
-        var client = _fixture.CreateClient();
+        var client = await _fixture.CreateAuthenticatedClientAsync();
 
         await client.GetAsync($"/api/pets/{seed.PetId}");
+
+        await collector.WaitForAsync("GET api/Pets/{id:int}");
 
         var valores = collector.Spans
             .SelectMany(span => span.Tags)

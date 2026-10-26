@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using ClyvoVetApi.DTOs.Request;
 using ClyvoVetApi.DTOs.Response;
 using ClyvoVetApi.Services.Interfaces;
@@ -7,19 +8,23 @@ using Microsoft.AspNetCore.Mvc;
 namespace ClyvoVetApi.Controllers;
 
 [ApiController]
+[Authorize(Policy = "ClinicalAccess")]
+[ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(ProblemDetails))]
+[ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ProblemDetails))]
 [Route("api/[controller]")]
-[Produces("application/json")]
 public class FuncionariosController(IFuncionarioService service) : ControllerBase
 {
     private readonly IFuncionarioService _service = service;
 
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(PagedResponseDto<FuncionarioResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
     public async Task<IActionResult> GetFuncionarios(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 10)
+        [FromQuery, Range(1, 1_000_000)] int page = 1,
+        [FromQuery, Range(1, 100)] int pageSize = 10,
+        [FromQuery] ListQueryOptions? query = null)
     {
-        var result = await _service.GetAllAsync(page, pageSize);
+        var result = await _service.GetAllAsync(page, pageSize, query ?? new ListQueryOptions());
         return Ok(result);
     }
 
@@ -57,7 +62,6 @@ public class FuncionariosController(IFuncionarioService service) : ControllerBas
         return Ok(result);
     }
 
-    [Authorize]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(FuncionarioResponseDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
@@ -67,7 +71,6 @@ public class FuncionariosController(IFuncionarioService service) : ControllerBas
         return CreatedAtAction(nameof(GetFuncionario), new { id = result.Id }, result);
     }
 
-    [Authorize]
     [HttpPut("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(FuncionarioResponseDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ProblemDetails))]
@@ -78,7 +81,6 @@ public class FuncionariosController(IFuncionarioService service) : ControllerBas
         return Ok(result);
     }
 
-    [Authorize]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ProblemDetails))]

@@ -109,6 +109,7 @@ public class AuthServiceTests
         Assert.Equal(_options.Issuer, token.Issuer);
         Assert.Contains(_options.Audience, token.Audiences);
         Assert.Equal(UsuarioValido, token.Subject);
+        Assert.Contains(token.Claims, claim => claim.Type == "scope" && claim.Value == "clinical");
     }
 
     [Fact]
