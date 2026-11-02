@@ -3,7 +3,7 @@
 -- =============================================================================
 -- Gerado a partir do modelo do Entity Framework Core (AppDbContext), com:
 --
---     dotnet ef dbcontext script --project ClyvoVetApi.csproj -o script_bd.sql
+--     dotnet ef dbcontext script --project src/ClyvoVetApi.Infrastructure --startup-project src/ClyvoVetApi.Infrastructure -o script_bd.sql
 --
 -- O terminador de bloco "/" foi movido para linha propria, para que o script
 -- execute em SQL*Plus, SQLcl e SQL Developer sem edicao manual.
@@ -17,6 +17,8 @@
 --
 -- Executar:
 --     sqlplus usuario/senha@host:1521/servico @script_bd.sql
+-- Somente em schema novo autorizado; nao combinar com a baseline de migrations.
+-- Para exportar SQL com os ajustes do provider: scripts/Export-OracleSql.ps1.
 -- =============================================================================
 
 BEGIN 
@@ -83,7 +85,7 @@ EXECUTE IMMEDIATE 'CREATE TABLE
     "pet_id" NUMBER(10) NOT NULL,
     "funcionario_id" NUMBER(10) NOT NULL,
     CONSTRAINT "CONSULTAS_PK" PRIMARY KEY ("consulta_id"),
-    CONSTRAINT "CK_CONSULTA_STATUS" CHECK (consulta_status IN ('A', 'C', 'R')),
+    CONSTRAINT "CK_CONSULTA_STATUS" CHECK ("consulta_status" IN (''A'', ''C'', ''R'')),
     CONSTRAINT "CONSULTAS_FUNCIONARIOS_FK" FOREIGN KEY ("funcionario_id") REFERENCES "FUNCIONARIOS" ("funcionario_id") ON DELETE CASCADE,
     CONSTRAINT "CONSULTAS_PETS_FK" FOREIGN KEY ("pet_id") REFERENCES "PETS" ("pet_id") ON DELETE CASCADE
 )';
@@ -99,7 +101,7 @@ EXECUTE IMMEDIATE 'CREATE TABLE
     "vacina_status" NCHAR(1) NOT NULL,
     "pet_id" NUMBER(10) NOT NULL,
     CONSTRAINT "VACINAS_PK" PRIMARY KEY ("vacina_id"),
-    CONSTRAINT "CK_VACINA_STATUS" CHECK (vacina_status IN ('P', 'A')),
+    CONSTRAINT "CK_VACINA_STATUS" CHECK ("vacina_status" IN (''P'', ''A'')),
     CONSTRAINT "VACINAS_PETS_FK" FOREIGN KEY ("pet_id") REFERENCES "PETS" ("pet_id") ON DELETE CASCADE
 )';
 END;

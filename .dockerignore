@@ -17,6 +17,10 @@ artifacts/
 
 # Segredos nunca entram na imagem. As variaveis sao injetadas em runtime.
 .env
+.env.*
+.aws/
+.codex/
+.agents/
 
 docker-compose.yml
 docker-compose.observability.yml

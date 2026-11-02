@@ -1,5 +1,9 @@
 services:
 
+  api:
+    environment:
+      OpenTelemetry__OtlpEndpoint: http://aspire-dashboard:18889
+
   aspire-dashboard:
     image: mcr.microsoft.com/dotnet/aspire-dashboard:9.0
     container_name: clyvovet-aspire-dashboard

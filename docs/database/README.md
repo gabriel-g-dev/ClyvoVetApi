@@ -1,225 +1,124 @@
-# Oracle e migrations da Sprint 4
+# Banco de dados
 
-O contexto EF Core está em `src/ClyvoVetApi.Infrastructure/Data`. A migration ativa
-`20261025155040_OracleBaseline` descreve as sete tabelas atuais, com nomes, tipos,
-PKs, seis FKs com cascade, índices únicos de e-mail e checks de status compatíveis
-com a modelagem da disciplina Database. O snapshot corresponde ao contexto.
-A compatibilidade SQL está fixada em Oracle 21, inclusive no contexto de design
-time, para corresponder à imagem Oracle XE 21 do Compose.
+O EF Core usa Oracle 21 para os dados relacionais. O modelo em
+`src/ClyvoVetApi.Infrastructure/Data/AppDbContext.cs`, o snapshot e a migration
+`20261025155040_OracleBaseline` representam sete tabelas: `DONOS`, `FUNCIONARIOS`,
+`PETS`, `CONSULTAS`, `MEDICAMENTOS`, `CONSULTAS_MEDICAMENTOS` e `VACINAS`.
 
-As migrations da modelagem anterior (TUTORES, quatro tabelas e colunas antigas)
-estão preservadas como texto em `docs/migrations-legadas`, fora da compilação.
-Não foram executadas, apagadas do banco ou convertidas automaticamente.
+O modelo define seis FKs com exclusão em cascata, e-mails únicos de donos e
+funcionários, peso `DECIMAL(5,2)`, valor de consulta `DECIMAL(10,2)` e datas
+`TIMESTAMP(7)`. Os status aceitos são `A/C/R` para consultas e `P/A` para vacinas.
+Os nomes das colunas usam aspas e letras minúsculas; essa distinção importa no
+Oracle.
 
-## Banco novo e descartável
+## Executar em um banco local novo
 
-Requer .NET 9 e Docker com Compose. O arquivo de testes não usa volumes
-persistentes e possui portas próprias; não aponta para o banco compartilhado.
-
-```powershell
-$env:ORACLE_TEST_PASSWORD = '<senha-ASCII-forte-com-ate-30-caracteres>'
-docker compose -f docker-compose.tests.yml -p clyvovet-sprint4 up -d --wait
-$env:CLYVOVET_ORACLE_TEST_CONNECTION = "User Id=clyvovet_test;Password=$env:ORACLE_TEST_PASSWORD;Data Source=localhost:11521/XEPDB1"
-$env:CLYVOVET_ORACLE_ALLOW_MIGRATIONS = 'true'
-$oracleResults = Join-Path (Get-Location) ('artifacts/TestResults/oracle-' + [guid]::NewGuid().ToString('N'))
-dotnet test ClyvoVetApi.Tests.Integration --filter Category=OracleReal --results-directory $oracleResults --logger trx --logger 'console;verbosity=normal'
-```
-
-Substitua o placeholder por uma senha local. Oracle XE 21 aceita até 30 caracteres
-ASCII nesses campos; por exemplo, 12 bytes aleatórios em hexadecimal, prefixados
-por `A9`, produzem 26 caracteres. Isso é independente da chave JWT, que exige
-pelo menos 32 bytes. Não reutilize os segredos de outro ambiente.
-
-O teste aplica `Database.MigrateAsync`, confirma um grafo com três pets e três
-consultas e abre um novo contexto/conexão para aplicar migrations novamente.
-Confere histórico, ausência de pendências e preservação do grafo, além de busca,
-paginação, empate por ID e ordenação decimal por peso/valor no provider Oracle.
-Uma tentativa de status inválido verifica o check e é revertida por rollback.
-
-O grafo válido é confirmado para ser visível à nova conexão. Ao terminar, a limpeza
-remove somente as três raízes criadas pelo teste, conferidas por ID e marcador
-aleatório; os cascades removem seu próprio grafo. Não há `EnsureDeleted`, `DROP`
-ou reset do schema. As identidades podem avançar mesmo após a limpeza. Nunca
-informe um banco compartilhado. Sem as duas variáveis de opt-in, o teste fica
-explicitamente **ignorado**, sem simular uma execução Oracle.
-
-Para aplicar manualmente no schema novo do Compose principal, siga a sequência
-de clone/restore do [README](../../README.md#instalação-e-execução), preencha `.env`
-e use o usuário/senha definidos em `ORACLE_APP_USER`/`ORACLE_APP_PASSWORD`:
-
-Use uma sessão dedicada e confira se ela já define
-`ConnectionStrings__OracleConnection`: variáveis da sessão prevalecem sobre `.env`
-na interpolação do Compose. Não continue com uma variável apontando para outro
-ambiente; ajuste a sessão conscientemente antes de subir os serviços.
+Requer .NET 9, Docker e Compose. Faça o restore e preencha `.env` conforme o
+[README principal](../../README.md). Use uma sessão dedicada: variáveis já
+definidas no terminal prevalecem sobre `.env` no Compose.
 
 ```powershell
 dotnet tool restore
 docker compose up -d --wait oracle-db mongo-db
-# A CLI .NET no host não lê .env; localhost acessa a porta publicada pelo Compose.
+
+# Use ORACLE_APP_USER e ORACLE_APP_PASSWORD do .env.
+# A CLI no host usa localhost; a API no Compose usa oracle-db.
 $oracleHostConnection = 'User Id=<usuario-local>;Password=<senha-local>;Data Source=localhost:1521/XEPDB1'
 dotnet ef database update --connection $oracleHostConnection --project src/ClyvoVetApi.Infrastructure --startup-project src/ClyvoVetApi.Infrastructure
+
 docker compose up -d --build api
 ```
 
-A API no container usa `oracle-db:1521/XEPDB1`; esse nome de serviço não é o
-endereço da CLI executada no host. Em outro banco novo autorizado, substitua a
-conexão pelo endereço correspondente. Não use esse fluxo em schema compartilhado
-ou já preenchido. Trocar variáveis de inicialização do Compose não recria nem
-altera usuários de um volume Oracle existente.
-O argumento `--connection` aplica o destino somente ao comando EF; a variável
-PowerShell local não altera a conexão interpolada pelo Compose.
+A CLI .NET não carrega `.env` automaticamente. O argumento `--connection` vale
+somente para o comando EF; não modifica a configuração da API. As senhas de
+inicialização do Oracle XE 21 devem ter até 30 caracteres ASCII. Alterar essas
+variáveis não recria usuários de um volume existente.
 
-A API não aplica migrations na inicialização; só inicie seu uso após sucesso do
-comando EF. Readiness comprova conexão, não existência do schema.
-A primeira operação da baseline
-recusa schemas que já contenham qualquer tabela clínica (inclusive TUTORES).
-Se uma criação falhar, o Oracle pode manter DDL já confirmado: inspecione o schema
-e resolva a causa; não repita comandos destrutivos para tentar corrigir.
+A API não aplica migrations ao iniciar. A baseline recusa schemas que já tenham
+tabelas clínicas, inclusive `TUTORES`. Não use esse procedimento em banco
+compartilhado ou preenchido. DDL Oracle pode permanecer confirmado após uma
+falha; investigue o estado do schema antes de tentar novamente. O health check
+de readiness verifica conectividade, não a existência das tabelas.
 
-## Banco existente
+## Banco existente e alinhamento com André
 
-Não execute `oracle-schema.sql`, `oracle-migrations.sql` ou `database update` sobre
-um banco existente para tentar alinhá-lo. A sequência segura depende do schema real:
+Antes de usar o banco do grupo, André precisa conferir o schema e autorizar uma
+estratégia de atualização:
 
-1. O responsável por Database realiza backup e registra schema, versão Oracle e
-   histórico `__EFMigrationsHistory` existentes.
-2. Execute `inspect-existing-oracle.sql` (somente leitura). Compare colunas,
-   capitalização, identidade, precisão, nulabilidade, PKs, FKs, índices e checks
-   com `oracle-schema.sql`. São sete tabelas e 36 colunas de negócio.
-   O diagnóstico inclui versão, colunas/ordem/expressões e DDL dos índices
-   standalone, opções/metadados de identidade e histórico EF quando presente.
-   `LAST_NUMBER` de sequência é um limite de cache, não uma garantia do próximo ID;
-   a inspeção não consome `NEXTVAL` nem altera a sequência.
-3. Se o schema for exatamente o modelo atual, adote a baseline apenas no histórico,
-   após revisão do responsável. Se a tabela de histórico não existir, use somente
-   seu bloco de criação no início de `oracle-migrations.sql`; em seguida registre
-   apenas a linha `20261025155040_OracleBaseline` com `ProductVersion` `9.0.4`.
-   Preserve registros antigos e dados de negócio. A criação do histórico e seu
-   registro são alterações deliberadas de banco e não foram executadas nesta entrega.
-4. Se houver diferenças, não marque a baseline como aplicada: prepare migração
-   incremental específica com o responsável e valide uma cópia do banco primeiro.
-   Um schema antigo com TUTORES não é equivalente ao atual com DONOS.
-5. Após uma adoção aprovada, confira `GetAppliedMigrations`/`GetPendingMigrations`
-   ou `dotnet ef migrations list`. Mantenha o backup e a evidência da comparação.
+1. Fazer backup e identificar a versão Oracle, o schema e o histórico
+   `__EFMigrationsHistory`.
+2. Executar [inspect-existing-oracle.sql](inspect-existing-oracle.sql), que
+   consulta apenas metadados. Comparar as sete tabelas e 36 colunas com
+   [oracle-schema.sql](oracle-schema.sql), incluindo nomes, tipos, nulabilidade,
+   identidades/IDs existentes, PKs, FKs, índices únicos e checks.
+3. Se o schema corresponder integralmente ao modelo atual, avaliar a adoção da
+   baseline no histórico, preservando os registros anteriores. Essa decisão não
+   autoriza executar o DDL de criação novamente.
+4. Se houver diferenças, preparar uma migration incremental e validá-la em uma
+   cópia do banco. O schema antigo com `TUTORES` não equivale ao atual com `DONOS`.
 
-O método `Down` da baseline é o rollback convencional gerado pelo EF e remove
-tabelas. Não deve ser executado em banco compartilhado ou com dados importantes.
-Nenhum rollback de migration foi executado nesta tarefa.
+Não execute `database update`, os scripts de criação ou o rollback `Down` da
+baseline no banco compartilhado sem esse alinhamento. O rollback remove tabelas.
 
-No Compose principal, Oracle e Mongo são publicados apenas em `127.0.0.1:1521`
-e `127.0.0.1:27017`; Dashboard/OTLP também usam apenas `127.0.0.1:18888` e
-`127.0.0.1:4317`. A API continua publicada na porta 8080. Os nomes de serviço
-e a rede entre containers permanecem iguais. Acesso remoto aos bancos ou ao
-Dashboard exige configuração explícita com André, incluindo autenticação e
-controle de acesso; o Dashboard local permite acesso anônimo.
+Confirme também as regras de exclusão: apagar um dono remove seus pets, consultas,
+vacinas e prescrições relacionadas; apagar funcionários ou medicamentos também
+remove os relacionamentos correspondentes. As evoluções no MongoDB permanecem
+após a exclusão relacional, portanto a retenção do histórico precisa ser acordada.
 
-Antes de adotar o banco do grupo, alinhe com André os nomes exatos e as aspas das
-colunas, `DECIMAL(5,2)` para peso, `DECIMAL(10,2)` para valor, datas `TIMESTAMP(7)`,
-identidades compatíveis com os IDs existentes, índices únicos de e-mail e checks
-de status. Revise também os seis cascades: excluir tutor pode apagar pets,
-consultas e vacinas; excluir funcionário pode apagar consultas e prescrições.
-As evoluções no MongoDB permanecem após a exclusão relacional. Esse comportamento
-exige uma política de retenção acordada; nenhuma adoção ou alteração foi feita
-no banco compartilhado.
+## Scripts e migrations
 
-## SQL exportado e compatibilidade
+| Arquivo | Uso |
+| --- | --- |
+| [oracle-migrations.sql](oracle-migrations.sql) | Baseline e histórico EF para schema novo; não é um script idempotente. |
+| [oracle-schema.sql](oracle-schema.sql) | DDL atual para comparação ou criação manual de schema novo, sem histórico EF. Não aplicar junto com a baseline. |
+| [inspect-existing-oracle.sql](inspect-existing-oracle.sql) | Inspeção somente leitura de schema, constraints, índices, identidades e histórico EF. |
+| [script_bd.sql](../../script_bd.sql) | DDL mantido para a disciplina Database; corresponde ao modelo de sete tabelas, sem histórico EF. |
+| [script.sql](../../script.sql) e [migrations legadas](../migrations-legadas/) | Modelagem anterior com `TUTORES` e expansões antigas. Preservadas para revisão com André; não combinar com a baseline atual. |
+
+Os dois checks de status de `script_bd.sql` usam os nomes de coluna entre aspas e
+literais duplicados dentro de `EXECUTE IMMEDIATE`. Esses ajustes corrigem a sintaxe
+do SQL dinâmico. A aplicação desse arquivo ainda exige validação em Oracle local.
+
+Para exportar novamente os SQLs atuais e conferir alterações no modelo, sem
+conectar ao banco:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/Export-OracleSql.ps1
 dotnet ef migrations has-pending-model-changes --project src/ClyvoVetApi.Infrastructure --startup-project src/ClyvoVetApi.Infrastructure
 ```
 
-- `oracle-migrations.sql`: criação do histórico e aplicação da baseline; inclui
-  interrupção de SQL*Plus em caso de erro SQL. A execução exige schema novo;
-  o arquivo completo não deve ser reaplicado como script idempotente.
-- `oracle-schema.sql`: DDL do modelo, para comparação e criação manual de schema
-  novo. Não registra migrations; não aplique ambos no mesmo banco.
-- `inspect-existing-oracle.sql`: diagnóstico somente leitura para um banco existente.
+O exportador ajusta o escape dos checks gerados pelo provider Oracle, os
+terminadores SQL*Plus e a codificação UTF-8 sem BOM.
 
-Foi identificado um problema verificável no `script_bd.sql` original: as colunas
-`"consulta_status"` e `"vacina_status"` são criadas com aspas e minúsculas, mas os
-checks usam nomes sem aspas; além disso, os literais dos checks aparecem sem
-duplicação de aspas dentro de `EXECUTE IMMEDIATE`. O arquivo original foi
-preservado por pertencer à integração com Database/DevOps. O novo DDL corrige os
-dois pontos, mantendo a estrutura relacional. A revisão deve ser compartilhada
-com o responsável pela disciplina antes da próxima aplicação do script original.
+## MongoDB
 
-O provider Oracle EF 9.23.60 também produz o segundo problema ao exportar checks
-no `CREATE TABLE` dinâmico. Por isso a migration adiciona os checks com `ALTER TABLE`
-direto após criar as tabelas, e o exportador normaliza os literais do DDL e o
-separador `/` para SQL*Plus. Os arquivos SQL são gravados em UTF-8 **sem BOM**,
-evitando um prefixo que alguns clientes rejeitam antes do primeiro `WHENEVER`.
-O próprio `.ps1` mantém BOM para reconhecer corretamente os textos no PowerShell 5.1.
-Os testes de modelo verificam a geração; a aplicação Oracle descrita abaixo foi
-executada por `Database.MigrateAsync`.
+As evoluções clínicas são documentos na coleção `evolucoes_clinicas`, no banco
+`clyvovet` por padrão. Cada documento contém ID, ID do pet, texto, autor, data UTC e
+tags. O repositório cria o índice composto `PetId/RegistradoEmUtc/_id` ao inserir
+ou listar documentos. Essa criação requer permissão de índice no MongoDB.
 
-`script.sql` também foi preservado: representa a modelagem legada com `TUTORES`,
-colunas `Id` e tabelas anteriores. Não o combine com `script_bd.sql` nem com os
-novos arquivos de baseline. A correção dos arquivos originais deve ser coordenada
-com Database/DevOps antes de qualquer aplicação.
+Configure `Mongo__ConnectionString`, `Mongo__DatabaseName` e, se necessário,
+`Mongo__CollectionName`. A API no Compose usa `mongodb://mongo-db:27017`; fora do
+container, use o endereço local correspondente. Oracle e Mongo são publicados
+em loopback pelo Compose. Para o ambiente do grupo, alinhe com André os endereços,
+credenciais, permissões e política de retenção; o Mongo local não exige autenticação.
 
-## Evidência e limites desta máquina
+## Testes com bancos descartáveis
 
-O [resumo versionável de validação](../validation/sprint4-results.json) consolida
-os resultados sanitizados. Os testes e comandos deste guia permitem reproduzi-los;
-os caminhos em `artifacts` abaixo são evidências brutas locais complementares,
-não arquivos necessários para executar o projeto em outro computador.
+Os testes HTTP locais usam SQLite e um repositório documental em memória; eles
+não substituem a validação nos providers Oracle e MongoDB. Os testes reais têm
+opt-in explícito e devem apontar somente para bancos locais descartáveis.
 
-Em 25/10/2026, a revisão adversarial encontrou Ubuntu WSL 2 por inspeção fora
-da restrição inicial do sandbox. Um Docker Engine oficial temporário e isolado
-permitiu iniciar Oracle XE 21 em container/schema novos, com credenciais geradas
-para a auditoria. Nenhum serviço Docker foi instalado e nenhum banco compartilhado
-foi acessado.
+```powershell
+$env:ORACLE_TEST_PASSWORD = '<senha-ASCII-forte-com-ate-30-caracteres>'
+docker compose -f docker-compose.tests.yml -p clyvovet-tests up -d --wait
+$env:CLYVOVET_ORACLE_TEST_CONNECTION = "User Id=clyvovet_test;Password=$env:ORACLE_TEST_PASSWORD;Data Source=localhost:11521/XEPDB1"
+$env:CLYVOVET_ORACLE_ALLOW_MIGRATIONS = 'true'
+$env:CLYVOVET_MONGO_TEST_CONNECTION = 'mongodb://localhost:27029'
+dotnet test ClyvoVetApi.Tests.Integration --filter 'Category=OracleReal|Category=MongoReal' --results-directory artifacts/TestResults/providers
+```
 
-`OracleReal` passou com a baseline `20261025155040_OracleBaseline`: primeira e
-segunda aplicação, nova conexão, grafo clínico, busca/páginas, peso/valor ordenados
-e check real. Separadamente, um marcador confirmado e o histórico EF sobreviveram
-ao restart real do container; o marcador foi removido por identificação exata.
-Os TRX estão em `artifacts/audit2/oracle-real`, e a prova de restart em
-`artifacts/audit2/oracle-restart-verified.txt`. Essa execução comprova a criação
-do zero no Oracle 21; não aprova automaticamente um schema existente.
-
-A inspeção SQL real, executada como usuário da aplicação, confirmou sete tabelas,
-36 colunas, sete PKs, seis FKs com cascade, dois índices únicos de e-mail e sete
-identidades. O resultado está em `artifacts/audit2/oracle-schema-inspection.txt`.
-Um processo nativo da API também completou 90 requisições contra Oracle/Mongo
-reais, cobrindo os sete CRUDs, leitura após escrita, links, precisão decimal,
-filtros/páginas, autorização e histórico documental. O relatório sanitizado está
-em `artifacts/audit2/native-http-report.json`. As suítes Debug e Release passaram,
-cada uma, com 438 casos aprovados e nenhum caso ignorado.
-
-Geração/exportação do SQL e consistência do snapshot também foram verificadas.
-Os três arranjos Compose passaram por `config --quiet` com Compose oficial 5.6.0
-e checksum conferido. O build real da imagem da API passou sem avisos ou erros.
-No runtime e após restart da API, live/ready/OpenAPI retornaram 200, o GET clínico
-anônimo retornou 401, o processo usou UID 1654 (`app`) e os logs JSON/arquivo
-funcionaram. Nesse smoke o Oracle do Compose ficou sem migrations; readiness
-comprova conexão, não a existência do schema clínico.
-
-O daemon descartável tem forwarding/iptables desabilitados. A tentativa na rede
-bridge original teve readiness 503; um override temporário restrito compartilhou
-o namespace privado somente entre os três containers novos, com portas em loopback,
-e permitiu o smoke saudável. A alternativa de host networking foi rejeitada pelo
-review automático antes de executar e substituída por esse caminho privado.
-Não houve alteração de firewall/sysctl. Depois do smoke, os bindings versionados
-de Oracle/Dashboard foram restringidos a loopback e os três arranjos passaram
-novamente por `config --quiet`, sem recriação de containers. Isso não altera
-a rede entre os serviços nem a publicação da API 8080.
-A rede bridge padrão ainda precisa ser exercitada em um daemon com rede habilitada.
-
-Os containers e volumes do projeto de smoke foram removidos após conferir seus
-IDs, nomes e labels; o Oracle usado nas provas de persistência foi preservado
-durante essa limpeza. Evidências sanitizadas estão em
-`artifacts/audit2/docker-runtime/validation-summary.json`. Arquivos de resultados
-e segredos temporários não são versionados. Na integração com o grupo, confirme
-também nomes DNS/serviços, portas e autenticação MongoDB fora da rede local.
-
-No fechamento da auditoria em 26/10/2026, o ambiente Oracle/Docker restante e o
-Mongo temporário também foram removidos, junto com seus dados/credenciais próprios.
-O Ubuntu WSL existente foi preservado. As confirmações estão em
-`artifacts/audit2/docker-cleanup.json` e `mongo-cleanup.json`; as evidências das
-execuções e reinicializações continuam disponíveis nos artefatos locais.
-
-A estratégia de baseline segue a orientação oficial de [gerenciamento de migrations
-do EF Core](https://learn.microsoft.com/en-us/ef/core/managing-schemas/migrations/managing):
-um banco existente exige inspeção, backup e registro da baseline sem repetir seu DDL.
+O teste Oracle aplica a baseline, confirma persistência por nova conexão e limpa
+somente o grafo que criou. Os testes Mongo criam bancos `clyvovet_tests_<guid>` e
+os excluem ao terminar. Sem as variáveis correspondentes, esses casos são
+ignorados pelo xUnit. Não use conexões de ambientes compartilhados nesses testes.

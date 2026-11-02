@@ -5,6 +5,13 @@
 
 # dotenv files
 .env
+.env.*
+!.env.example
+
+# Local tooling and private credentials
+.aws/
+.codex/
+.agents/
 
 # User-specific files
 *.rsuser
