@@ -214,6 +214,71 @@ public class RestContractTests(IntegrationTestFixture fixture)
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData("/api/pets/raca/Labrador", "pet")]
+    [InlineData("/api/consultas/funcionario/{funcionarioId}", "consulta")]
+    [InlineData("/api/consultas/periodo?inicio={inicio}&fim={fim}", "consulta")]
+    [InlineData("/api/vacinas/pendentes", "vacina")]
+    [InlineData("/api/vacinas/nome/Anti", "vacina")]
+    [InlineData("/api/vacinas/proximas?dias=30", "vacina")]
+    [InlineData("/api/funcionarios/email/ana%40clyvovet.com", "funcionario")]
+    [InlineData("/api/funcionarios/setor/Cl%C3%ADnica%20Geral", "funcionario")]
+    [InlineData("/api/funcionarios/cargo/Veterin%C3%A1ria", "funcionario")]
+    [InlineData("/api/medicamentos/nome/Amoxi", "medicamento")]
+    public async Task SpecializedQuery_WhenAuthenticated_ReturnsOnlyTheMatchingRecord(string routeTemplate, string resource)
+    {
+        var seed = fixture.ResetDatabase();
+        using (var scope = fixture.Factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var otherPet = NewPet("Mimi", "Gato", seed.DonoId);
+            var otherFuncionario = new Funcionario
+            {
+                Nome = "Assistente", Setor = "Administrativo", Cargo = "Assistente",
+                Email = "assistente@example.test", Telefone = "11977777777"
+            };
+            db.AddRange(otherPet, otherFuncionario, new Medicamento { Nome = "Dipirona" });
+            await db.SaveChangesAsync();
+            db.AddRange(
+                new Consulta
+                {
+                    Tipo = "Outra consulta", Descricao = "Fora do período", Valor = 50m, Status = "A",
+                    Data = DateTime.Today.AddDays(100), PetId = otherPet.Id, FuncionarioId = otherFuncionario.Id
+                },
+                new Vacina
+                {
+                    Nome = "Outra vacina", Data = DateTime.Today.AddDays(100), Status = "A", PetId = otherPet.Id
+                });
+            await db.SaveChangesAsync();
+        }
+        using var client = await fixture.CreateAuthenticatedClientAsync();
+        var route = routeTemplate.Replace("{funcionarioId}", seed.FuncionarioId.ToString())
+            .Replace("{inicio}", DateTime.Today.ToString("yyyy-MM-dd"))
+            .Replace("{fim}", DateTime.Today.AddDays(5).ToString("yyyy-MM-dd"));
+        var expectedId = resource switch
+        {
+            "pet" => seed.PetId,
+            "consulta" => seed.ConsultaId,
+            "vacina" => seed.VacinaId,
+            "funcionario" => seed.FuncionarioId,
+            "medicamento" => seed.MedicamentoId,
+            _ => throw new ArgumentOutOfRangeException(nameof(resource))
+        };
+
+        using var response = await client.GetAsync(route);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var record = document.RootElement.ValueKind == JsonValueKind.Array
+            ? Assert.Single(document.RootElement.EnumerateArray()) : document.RootElement;
+        Assert.Equal(expectedId, record.GetProperty("id").GetInt32());
+        var self = Assert.Single(record.GetProperty("links").EnumerateArray(), link => link.GetProperty("rel").GetString() == "self");
+        using var linkedResponse = await client.GetAsync(self.GetProperty("href").GetString());
+        Assert.Equal(HttpStatusCode.OK, linkedResponse.StatusCode);
+        using var linkedDocument = JsonDocument.Parse(await linkedResponse.Content.ReadAsStringAsync());
+        Assert.Equal(expectedId, linkedDocument.RootElement.GetProperty("id").GetInt32());
+    }
+
     [Fact]
     public async Task PostPet_WhenDateIsMissingOrOwnerIdIsZero_ReturnsValidationProblem()
     {

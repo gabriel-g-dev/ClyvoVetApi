@@ -108,12 +108,20 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 context.Response.Headers.WWWAuthenticate = "Bearer";
                 await Results.Problem(statusCode: 401, title: "Autenticação necessária",
                     detail: "Informe um token Bearer válido.",
-                    extensions: new Dictionary<string, object?> { ["traceId"] = context.HttpContext.TraceIdentifier })
+                    extensions: new Dictionary<string, object?>
+                    {
+                        ["traceId"] = context.HttpContext.Items[CorrelationIdMiddleware.PropertyName]
+                            ?? context.HttpContext.TraceIdentifier
+                    })
                     .ExecuteAsync(context.HttpContext);
             },
             OnForbidden = context => Results.Problem(statusCode: 403, title: "Acesso negado",
                 detail: "O token não possui permissão de acesso clínico.",
-                extensions: new Dictionary<string, object?> { ["traceId"] = context.HttpContext.TraceIdentifier })
+                extensions: new Dictionary<string, object?>
+                {
+                    ["traceId"] = context.HttpContext.Items[CorrelationIdMiddleware.PropertyName]
+                        ?? context.HttpContext.TraceIdentifier
+                })
                 .ExecuteAsync(context.HttpContext)
         };
     });

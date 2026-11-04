@@ -153,6 +153,19 @@ public class PetsEndpointsTests(IntegrationTestFixture fixture)
         Assert.NotNull(updated);
         Assert.Equal("Rex Atualizado", updated.Nome);
         Assert.Equal("Golden", updated.Raca);
+
+        var follow = await client.GetAsync($"/api/pets/{seed.PetId}");
+        Assert.Equal(HttpStatusCode.OK, follow.StatusCode);
+
+        var persisted = await follow.Content.ReadFromJsonAsync<PetDetailsResponseDto>();
+        Assert.NotNull(persisted);
+        Assert.Equal(seed.PetId, persisted.Id);
+        Assert.Equal("Rex Atualizado", persisted.Nome);
+        Assert.Equal("Cachorro", persisted.Especie);
+        Assert.Equal("Golden", persisted.Raca);
+        Assert.Equal(new DateTime(2020, 1, 15), persisted.DataNascimento);
+        Assert.Equal(27.30m, persisted.Peso);
+        Assert.Equal(seed.DonoId, persisted.DonoId);
     }
 
     [Fact]

@@ -16,6 +16,42 @@ public class AuthenticationTests(IntegrationTestFixture fixture)
 {
     private readonly IntegrationTestFixture _fixture = fixture;
 
+    [Theory]
+    [InlineData("missing", HttpStatusCode.Unauthorized)]
+    [InlineData("malformed", HttpStatusCode.Unauthorized)]
+    [InlineData("expired", HttpStatusCode.Unauthorized)]
+    [InlineData("wrong-key", HttpStatusCode.Unauthorized)]
+    [InlineData("missing-scope", HttpStatusCode.Forbidden)]
+    public async Task ClinicalAccess_WhenRejected_PreservesRequestCorrelation(string tokenKind, HttpStatusCode expectedStatus)
+    {
+        using var client = _fixture.CreateClient();
+        const string correlationId = "clinical-access-rejeitado-sprint4";
+        client.DefaultRequestHeaders.Add("X-Correlation-Id", correlationId);
+        var token = tokenKind switch
+        {
+            "missing" => null,
+            "malformed" => "token-invalido",
+            "expired" => ExpiredToken(),
+            "wrong-key" => TokenSignedWith(OutraChave()),
+            "missing-scope" => TokenSignedWith(new SymmetricSecurityKey(Encoding.UTF8.GetBytes(ClyvoVetWebApplicationFactory.SigningKey))),
+            _ => throw new ArgumentOutOfRangeException(nameof(tokenKind))
+        };
+        if (token is not null)
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+        using var response = await client.GetAsync("/api/pets");
+
+        Assert.Equal(expectedStatus, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetailsResponse>();
+        Assert.NotNull(problem);
+        Assert.Equal((int)expectedStatus, problem.Status);
+        Assert.Equal(correlationId, problem.TraceId);
+        Assert.Equal(correlationId, response.Headers.GetValues("X-Correlation-Id").Single());
+        if (expectedStatus == HttpStatusCode.Unauthorized)
+            Assert.Contains(response.Headers.WwwAuthenticate, value => value.Scheme == "Bearer");
+    }
+
     [Fact]
     public async Task Login_WhenRejected_ReturnsProblemWithRequestCorrelation()
     {
